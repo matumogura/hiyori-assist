@@ -1,0 +1,48 @@
+{
+  "manifest_version": 3,
+  "name": "ヒヨリ 日程入力アシスト",
+  "short_name": "ヒヨリ日程入力",
+  "version": "0.8.2",
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA9RPuQeWSZCSfh+6aqi/WBGFcThaQIV6R7w3kUOJwKWX5DkQguKr44+Mi2JrcDozTPWUvULgrSiUqJosB5x9F4XzB9iu2lUUY+76dtOTjUsDDd2xYKYRpGBsfXVh5foazDM98ZfuSP0po7aeA2aSUqIoc3NXNXRP2bE8FO8hiZSPFG79KZEbNR5K3iPu0gH3jYXcidLUQky6nb5F28xeNEkTps/s/Uum/pHz99TvjeFdElpRSMYVbSCgDuMvTY+0ygrF9/02EvGzT8jE7A0qf5CD0M6KeFUqbs6Ik+UUBtw1W0E6RR/NoUpdi0F/dBpcJrJFbFrJvgMSGm2Qj6fk4/QIDAQAB",
+  "description": "伝助・デイコード・調整さんの出欠入力画面に「フリカレから取り込む」「テキストから取り込む」「まとめて入力」「いつものコメント」を追加します。",
+  "icons": {
+    "16": "icons/16.png",
+    "32": "icons/32.png",
+    "48": "icons/48.png",
+    "128": "icons/128.png"
+  },
+  "permissions": [
+    "storage",
+    "declarativeNetRequestWithHostAccess"
+  ],
+  "host_permissions": [
+    "https://freecalend.com/open/data",
+    "https://calendar.google.com/calendar/ical/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://densuke.biz/*",
+        "http://densuke.biz/*",
+        "https://character-sheets.appspot.com/schedule/input*",
+        "https://chouseisan.com/s*"
+      ],
+      "js": [
+        "availability.js",
+        "content.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
+  "homepage_url": "https://macchan.onrender.com/sched/",
+  "action": {
+    "default_title": "ヒヨリを開く",
+    "default_icon": {
+      "16": "icons/16.png",
+      "32": "icons/32.png"
+    }
+  }
+}
