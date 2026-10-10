@@ -57,9 +57,10 @@ Discord：https://discord.gg/KTBmA3N7tW
 **ホームページURL**：https://github.com/matumogura/hiyori-assist
 
 **画像**（`store/images/`）
-- アイコン 128×128：`icons/128.png`
+- アイコン 128×128：`icon-128.png`（ストアの推奨どおり、絵は96×96で周りに16pxの透明な余白。拡張機能の中の `icons/128.png` は余白なしのまま）
 - スクリーンショット 1280×800：`screenshot-1.png` 〜 `screenshot-3.png`
 - 小さいプロモーションタイル 440×280：`promo-small.png`
+- マーキー プロモーション タイル 1400×560：`promo-marquee.png`
 
 ## 3. プライバシーへの取り組み（Privacy practices タブ）
 

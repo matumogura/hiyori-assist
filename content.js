@@ -170,7 +170,7 @@
       noPromo: true,
       // 色と角の丸みをデイコード（Bulma）に寄せる
       theme: 'daycode',
-      sideMax: 440,   // デイコードの部品は小さめなので、パネルも細めに
+      sideMax: 500,   // デイコードの部品は小さめなので、パネルも少し細めに（取り込みのチェック3つが1行に入る幅）
     },
 
     {
@@ -339,6 +339,9 @@
   // ------------------------------------------------------------ 記号
 
   const SYMBOL_LIST = SITE.symbols(candidates);
+  // ×にあたる記号の値（「×の日以外を更新」で使う）
+  const NG_KEYS = new Set(SYMBOL_LIST.filter((s) => s.kind === 'ng').map((s) => String(s.key)));
+  const isNg = (c) => NG_KEYS.has(String(current(c)));
   if (!SYMBOL_LIST.length) return null;
   /** 記号の文字 → サイト側の値 */
   const symbols = Object.fromEntries(SYMBOL_LIST.map((s) => [s.text, s.key]));
@@ -479,7 +482,7 @@
   // ------------------------------------------------------------ 設定の保存
 
   const DEFAULTS = {
-    freecal: '', pattern: 'weekday', capByPattern: true, keepFilled: true, futureOnly: true, futureOnlyTx: true,
+    freecal: '', pattern: 'weekday', capByPattern: true, keepFilled: true, keepNg: false, futureOnly: true, futureOnlyTx: true,
     comment: '', commentAuto: true, openEnd: '180',
     collapsed: false, tab: 'fc',
   };
@@ -634,6 +637,7 @@
     .theme-daycode input[type=text], .theme-daycode input[type=password], .theme-daycode select { height: 30px; padding: 0 8px; font-size: 12.5px; }
     .theme-daycode textarea { font-size: 12.5px; padding: 6px 8px; min-height: 84px; }
     .theme-daycode .check { font-size: 12px; }
+    .theme-daycode .pane .row { column-gap: 12px !important; }
     .theme-daycode .check input { width: 13px; height: 13px; }
     .theme-daycode .hint { font-size: 12px; }
     .theme-daycode .days, .theme-daycode .syms { gap: 4px; }
@@ -969,6 +973,7 @@
           </div>
           <div class="row" style="column-gap:16px">
             <label class="check"${SITE.hasBlank ? '' : ' hidden'}><input type="checkbox" id="keep"> 入力済みの日はそのまま</label>
+            <label class="check"${SITE.hasBlank ? '' : ' hidden'}><input type="checkbox" id="keepng"> ×の日以外を更新</label>
             <label class="check"><input type="checkbox" id="future"> 本日以降の予定を更新</label>
           </div>
         </div>
@@ -981,6 +986,7 @@
           </div>
           <div class="row" style="column-gap:16px">
             <label class="check"${SITE.hasBlank ? '' : ' hidden'}><input type="checkbox" id="gkeep"> 入力済みの日はそのまま</label>
+            <label class="check"${SITE.hasBlank ? '' : ' hidden'}><input type="checkbox" id="gkeepng"> ×の日以外を更新</label>
             <label class="check"><input type="checkbox" id="gfuture"> 本日以降の予定を更新</label>
           </div>
           <label class="check" id="gfcwrap"><input type="checkbox" id="gfc"> <span id="gfclbl">フリカレの予定も重ねる</span></label>
@@ -1252,6 +1258,7 @@
     $('#future').checked = !!settings.futureOnly;
     $('#futureTx').checked = !!settings.futureOnlyTx;
     $('#gkeep').checked = !!settings.keepFilled;
+    $('#keepng').checked = $('#gkeepng').checked = !!settings.keepNg;
     $('#gfuture').checked = !!settings.futureOnly;
     renderGcals();
     syncGfc();
@@ -1291,6 +1298,10 @@
   $('.wrap').addEventListener('click', () => { if (settings.collapsed) toggleOpen(); });
   $('#pattern').onchange = () => { saveSettings({ pattern: $('#pattern').value }) };
   $('#keep').onchange = () => { saveSettings({ keepFilled: $('#keep').checked }); $('#gkeep').checked = $('#keep').checked; };
+  // ×にしてある日（行けないと決めた日）は残し、それ以外を更新する。フリカレと Google で同じ設定
+  for (const id of ['#keepng', '#gkeepng']) {
+    $(id).onchange = () => { saveSettings({ keepNg: $(id).checked }); $('#keepng').checked = $('#gkeepng').checked = $(id).checked; };
+  }
   $('#future').onchange = () => { saveSettings({ futureOnly: $('#future').checked }); $('#gfuture').checked = $('#future').checked; };
   $('#futureTx').onchange = () => saveSettings({ futureOnlyTx: $('#futureTx').checked });
   // 「入力済みの日はそのまま」「本日以降」はフリカレと Google で同じ設定を使う
@@ -1423,12 +1434,14 @@
     const pattern = $('#pattern').value;
     const cap = $('#cap').checked;
     const keep = SITE.hasBlank && $('#keep').checked;
+    const keepNg = SITE.hasBlank && $('#keepng').checked;
 
     // 読み込みの上限（1回3か月まで）で読まなかった月は、触らずにそのままにする
     const skippedMonths = new Set(res.skipped || []);
-    let applied = 0, kept = 0, closed = 0, same = 0, noSym = 0, notRead = 0;
+    let applied = 0, kept = 0, keptNg = 0, closed = 0, same = 0, noSym = 0, notRead = 0;
     for (const c of dated) {
       if (keep && current(c) !== '0') { kept++; continue; }
+      if (keepNg && isNg(c)) { keptNg++; continue; }
       const ym = `${+c.date.slice(0, 4)}-${+c.date.slice(5, 7)}`;
       if (res.closed[ym]) { closed++; continue; }
       if (skippedMonths.has(c.date.slice(0, 7))) { notRead++; continue; }
@@ -1440,6 +1453,7 @@
     }
     const parts = [];
     if (kept) parts.push(`入力済み ${kept}日はそのまま`);
+    if (keptNg) parts.push(`×の${keptNg}日はそのまま`);
     if (past) parts.push(`過ぎた日 ${past}日はそのまま`);
     if (same) parts.push(`変更なし ${same}日`);
     if (closed) parts.push(`非公開の月 ${closed}日`);
@@ -1512,7 +1526,7 @@
    * 「日付 記号」の行（時刻つきの形式も可）を読んで表に入れる。テキスト取り込みと Googleカレンダー取り込みの共通部分。
    * future … 過ぎた日には入れない / keep … 入力済みの日はそのまま / quiet … 機械が作った行なので行数の内訳は出さない
    */
-  async function importText(text, { future = false, keep = false, quiet = false, extra = [] } = {}) {
+  async function importText(text, { future = false, keep = false, keepNg = false, quiet = false, extra = [] } = {}) {
     const unit = quiet ? '日' : '行';
 
     const dated = candidates.filter((c) => c.date);
@@ -1531,7 +1545,7 @@
     const futureTx = !!future;
     const now = new Date();
     const today = `${now.getFullYear()}-${p2(now.getMonth() + 1)}-${p2(now.getDate())}`;
-    let applied = 0, same = 0, outside = 0, noSym = 0, timed = 0, past = 0, kept = 0;
+    let applied = 0, same = 0, outside = 0, noSym = 0, timed = 0, past = 0, kept = 0, keptNg = 0;
     const hitDates = new Set();
     for (const [d, raw] of Object.entries(cells)) {
       const targets = dated.filter((c) => c.date === d);
@@ -1548,6 +1562,7 @@
       if (cap) st = capByPattern(st, pattern, holiday);
       for (const c of targets) {
         if (keep && current(c) !== '0') { kept++; continue; }
+        if (keepNg && isNg(c)) { keptNg++; continue; }
         let cat;
         if (busy && c.time) {
           cat = judgeByTime(c, busy, { windows, openEnd, cap, pattern, holiday });
@@ -1564,6 +1579,7 @@
     const ignored = Math.max(0, lines - Object.keys(cells).length);
     const parts = [];
     if (kept) parts.push(`入力済み ${kept}件はそのまま`);
+    if (keptNg) parts.push(`×の${keptNg}件はそのまま`);
     if (past) parts.push(`過ぎた日 ${past}${unit}はそのまま`);
     if (same) parts.push(`変更なし ${same}件`);
     if (outside && !quiet) parts.push(`候補に無い日付 ${outside}行`);
@@ -1697,7 +1713,7 @@
     }
     for (const f of res.failed || []) extra.push(`${f.no}つめは読めませんでした（${f.message}）`);
     if (res.cached) extra.push('10分以内に読んだ内容');
-    return importText(gcalText(days, dates), { future, keep: SITE.hasBlank && $('#gkeep').checked, quiet: true, extra });
+    return importText(gcalText(days, dates), { future, keep: SITE.hasBlank && $('#gkeep').checked, keepNg: SITE.hasBlank && $('#gkeepng').checked, quiet: true, extra });
   }));
 
   // ------------------------------------------------------------ まとめて入力
