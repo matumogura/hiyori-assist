@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ヒヨリ 日程入力アシスト の設定</title>
+<style>
+  :root {
+    --ink: #1f3a4a; --ink-2: #3c5868; --muted: #5d7685; --faint: #8fa5b1;
+    --bg: #f3fafc; --card: #fff; --soft: #eaf2f5; --soft-2: #dcecf1;
+    --ring: rgba(31,58,74,.09); --ring-strong: rgba(31,58,74,.16);
+    --accent: #2b78ad; --accent-ink: #1f5f8c; --accent-soft: #e1f0f8;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.6 system-ui, -apple-system, "Segoe UI", "Hiragino Sans", "Yu Gothic UI", Meiryo, sans-serif; }
+  header { background: #5fa6d3; color: #fff; text-shadow: 0 1px 2px rgba(20,70,110,.35); }
+  header .in { max-width: 720px; margin: 0 auto; padding: 18px 16px; }
+  header h1 { margin: 0; font-size: 18px; }
+  header p { margin: 2px 0 0; font-size: 13px; opacity: .95; }
+  main { max-width: 720px; margin: 0 auto; padding: 16px; display: grid; gap: 14px; }
+  .card { background: var(--card); border-radius: 14px; padding: 16px; box-shadow: 0 0 0 1px var(--ring); display: grid; gap: 10px; }
+  h2 { margin: 0; font-size: 14px; color: var(--ink-2); }
+  .hint { color: var(--muted); font-size: 12.5px; }
+  .note { background: #fff6de; color: #8a6a10; border-radius: 10px; padding: 8px 12px; font-size: 12.5px; }
+  .row { display: flex; align-items: center; gap: 8px; }
+  .no { flex: none; width: 20px; height: 20px; border-radius: 50%; background: var(--accent-soft); color: var(--accent-ink); font-size: 11.5px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; }
+  input[type=text], input[type=password] { flex: 1; min-width: 0; font: inherit; color: var(--ink); background: #fff; border: 0; border-radius: 9px; padding: 8px 10px; box-shadow: 0 0 0 1px var(--ring-strong); }
+  input:focus { outline: none; box-shadow: 0 0 0 1px var(--accent), 0 0 0 4px var(--accent-soft); }
+  button { font: inherit; cursor: pointer; border: 0; border-radius: 9px; padding: 8px 14px; background: var(--soft); color: var(--ink); }
+  button:hover:not([disabled]) { background: var(--soft-2); }
+  button[disabled] { opacity: .45; cursor: default; }
+  .primary { background: var(--accent); color: #fff; font-weight: 700; }
+  .primary:hover:not([disabled]) { background: var(--accent-ink); }
+  .ghost { background: transparent; color: var(--muted); padding: 6px 8px; }
+  .between { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+  label.lbl { font-size: 12.5px; color: var(--muted); }
+  #saved { color: var(--accent-ink); font-size: 13px; }
+  ol { margin: 0; padding-left: 20px; color: var(--ink-2); font-size: 13px; }
+</style>
+</head>
+<body>
+<header><div class="in"><h1>ヒヨリ 日程入力アシスト の設定</h1><p>Googleカレンダーから空き状況を読むための設定です</p></div></header>
+<main>
+  <section class="card">
+    <h2>読み込むGoogleカレンダー</h2>
+    <div id="list" style="display:grid;gap:8px"></div>
+    <div class="between">
+      <button type="button" class="ghost" id="add">＋ カレンダーを増やす</button>
+      <span id="saved" aria-live="polite"></span>
+      <button type="button" class="primary" id="save">保存</button>
+    </div>
+    <div class="note">このアドレスは予定を読める鍵です。この拡張機能の中にだけ保存し、Google以外には送りません。ヒヨリのサイトにも送りません。他の人に見せないでください。</div>
+  </section>
+
+  <section class="card">
+    <h2>アドレスの調べ方</h2>
+    <ol>
+      <li>パソコンで Googleカレンダーを開き、右上の歯車 →「設定」</li>
+      <li>左の「マイカレンダーの設定」から、読みたいカレンダーを選ぶ</li>
+      <li>「カレンダーの統合」までスクロールし、「iCal形式の非公開アドレス」をコピー</li>
+      <li>上の欄に貼って「保存」</li>
+    </ol>
+    <div class="hint">Google側の反映に数時間かかることがあります。会社や学校のアカウントでは、このアドレスが使えないことがあります。</div>
+  </section>
+
+  <section class="card">
+    <h2>予定名の扱い</h2>
+    <label class="lbl" for="tent">△にする語（予定名にこの語があれば△。ヒヨリでは△の日は入れません）</label>
+    <input type="text" id="tent" placeholder="例：仮, 未定, 調整中">
+    <label class="lbl" for="ign">数えない語（予定名にこの語があれば無いものとする）</label>
+    <input type="text" id="ign" placeholder="例：誕生日, リマインド">
+    <div class="hint">予定名はこの判定にだけ使い、どこにも送りません。</div>
+  </section>
+</main>
+<script src="options.js"></script>
+</body>
+</html>

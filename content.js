@@ -166,6 +166,11 @@
       isPageInput: (target) => !!target.closest?.('.statustag, .allstatus'),
       commentEl: () => document.getElementById('comment'),
       hasBlank: true,
+      // デイコードは外部サービスへの誘導が禁止。ヒヨリのロゴと「日程調整を作る」の案内を出さない
+      noPromo: true,
+      // 色と角の丸みをデイコード（Bulma）に寄せる
+      theme: 'daycode',
+      sideMax: 440,   // デイコードの部品は小さめなので、パネルも細めに
     },
 
     {
@@ -474,7 +479,7 @@
   // ------------------------------------------------------------ 設定の保存
 
   const DEFAULTS = {
-    freecal: '', pattern: 'weekday', capByPattern: true, keepFilled: true,
+    freecal: '', pattern: 'weekday', capByPattern: true, keepFilled: true, futureOnly: true, futureOnlyTx: true,
     comment: '', commentAuto: true, openEnd: '180',
     collapsed: false, tab: 'fc',
   };
@@ -522,8 +527,8 @@
     free: 'いつでも空いている', weekday: '平日の昼は仕事', shift: 'シフト制で不定休', nightly: '夜だけ参加できる',
   };
   const WIPE_LABEL = SITE.hasBlank ? '長押しで全部消す' : `長押しで全部${esc(T.ng || '×')}に`;
-  const symOptions = (withBlank) => SYMS.map((t) => `<option value="${esc(t)}">${esc(t)}</option>`).join('')
-    + (withBlank ? '<option value="">空欄</option>' : '');
+  const symOptions = (withBlank) => SYMS.map((t) => `<option value="${esc(t)}" class="o-${symClass(t)}">${esc(t)}</option>`).join('')
+    + (withBlank ? '<option value="" class="o-blank">空欄</option>' : '');
 
   root.innerHTML = `
   <style>
@@ -574,11 +579,77 @@
     @media (hover: hover) and (pointer: fine) { .brand:hover { opacity: .78; } }
     .vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
     .sub { color: var(--muted); font-size: 13.5px; }
+    .sub.plain { color: var(--ink-2); font-size: 14px; font-weight: 700; }
     .spacer { flex: 1; }
     .body { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; padding: 0 8px 10px; }
     .body > *, details summary { min-width: 0; }
     .wrap.collapsed .body, .wrap.collapsed .toast-slot { display: none; }
     .wrap.collapsed .chev { transform: rotate(-90deg); }
+    /* たたんだときは、幅の狭い1つのボタンにする。どこを押してもひらく */
+    .wrap.collapsed { width: max-content; max-width: 100%; cursor: pointer;
+      transition: box-shadow 140ms ease, background-color 140ms ease; }
+    .wrap.collapsed .top { padding: 9px 8px 9px 14px; gap: 8px; }
+    .wrap.collapsed #undo, .wrap.collapsed .top .spacer { display: none; }
+    .wrap.collapsed .brand { pointer-events: none; }
+    .wrap.collapsed .sub { color: var(--ink-2); font-weight: 700; }
+    .wrap.collapsed #toggle { color: var(--accent); }
+    @media (hover: hover) and (pointer: fine) {
+      .wrap.collapsed:hover { background: var(--card); box-shadow: 0 0 0 1px var(--accent), 0 4px 14px rgba(31,58,74,.10); }
+    }
+
+    /* ---- デイコードの画面になじませる（Bulma の色と角） ---- */
+    .wrap.theme-daycode {
+      --ink: #363636; --ink-2: #4a4a4a; --muted: #7a7a7a; --faint: #a8a8a8;
+      --bg: #fafafa; --card: #fff; --soft: #f5f5f5; --soft-2: #ededed;
+      --ring: rgba(10, 10, 10, .08); --ring-strong: rgba(10, 10, 10, .16);
+      --accent: #00b89c; --accent-ink: #00947e; --accent-soft: #ebfffc;
+      font-family: BlinkMacSystemFont, -apple-system, "Segoe UI", "Hiragino Sans", "Yu Gothic UI", Meiryo, Roboto, sans-serif;
+      border-radius: 6px;
+      box-shadow: 0 .5em 1em -.125em rgba(10,10,10,.1), 0 0 0 1px rgba(10,10,10,.06);
+    }
+    .theme-daycode .card { border-radius: 6px; box-shadow: 0 0 0 1px #ededed; }
+    .theme-daycode button, .theme-daycode .day, .theme-daycode .tog span, .theme-daycode .seg,
+    .theme-daycode input[type=text], .theme-daycode input[type=password], .theme-daycode textarea, .theme-daycode select,
+    .theme-daycode .sub-row select.mini, .theme-daycode #replace, .theme-daycode .hold { border-radius: 4px; }
+    .theme-daycode .seg-ind, .theme-daycode .seg button { border-radius: 3px; }
+    .theme-daycode .day.preset { border-radius: 290486px; }
+    .theme-daycode #replace { box-shadow: 0 0 0 1px #b5f0e5; }
+    /* 大きさもデイコードの小さいボタン（高さ30px・12px）に合わせる */
+    .wrap.theme-daycode { font-size: 13px; }
+    .theme-daycode .top { padding: 8px 8px 8px 12px; }
+    .theme-daycode .sub.plain, .theme-daycode.collapsed .sub { font-size: 13px; }
+    .theme-daycode .body { gap: 6px; padding: 0 6px 8px; }
+    .theme-daycode .card { padding: 10px; }
+    .theme-daycode details.card { padding: 0; }
+    .theme-daycode .card-h { margin-bottom: 8px; }
+    .theme-daycode h2 { font-size: 12.5px; }
+    .theme-daycode .stack { gap: 6px; }
+    .theme-daycode .tally span { font-size: 12px; padding: 0 7px 0 5px; }
+    .theme-daycode button { font-size: 12px; padding: 0 10px; height: 30px; }
+    .theme-daycode .ghost { height: 26px; font-size: 12px; padding: 0 6px; }
+    .theme-daycode .icon-btn { height: 26px; padding: 0 4px; }
+    .theme-daycode .seg { padding: 2px; margin-bottom: 8px; }
+    .theme-daycode .seg-ind { top: 2px; bottom: 2px; left: 2px; width: calc((100% - 4px) / 3); }
+    .theme-daycode .seg button { height: 26px; font-size: 12px; }
+    .theme-daycode input[type=text], .theme-daycode input[type=password], .theme-daycode select { height: 30px; padding: 0 8px; font-size: 12.5px; }
+    .theme-daycode textarea { font-size: 12.5px; padding: 6px 8px; min-height: 84px; }
+    .theme-daycode .check { font-size: 12px; }
+    .theme-daycode .check input { width: 13px; height: 13px; }
+    .theme-daycode .hint { font-size: 12px; }
+    .theme-daycode .days, .theme-daycode .syms { gap: 4px; }
+    .theme-daycode .day { height: 30px; font-size: 12.5px; }
+    .theme-daycode .day.preset { height: 24px; padding: 0 9px; font-size: 11.5px; }
+    .theme-daycode .tog span { height: 30px; font-size: 12px; }
+    .theme-daycode .sym { height: 30px; font-size: 14px; }
+    .theme-daycode .sym-clear { height: 30px; font-size: 12px; }
+    .theme-daycode .hold { height: 30px; font-size: 12px; }
+    .theme-daycode .sub-row { font-size: 12px; padding-top: 8px; }
+    .theme-daycode .sub-row select.mini { height: 30px; font-size: 13.5px; padding: 0 24px 0 10px; }
+    .theme-daycode .sub-row select[data-kind="blank"] { font-size: 12px; }
+    .theme-daycode #replace { height: 30px; font-size: 12px; padding: 0 12px; }
+    .theme-daycode details summary { padding: 8px 10px; }
+    .theme-daycode .foot { font-size: 11.5px; padding: 0 12px 10px; }
+    @media (hover: hover) and (pointer: fine) { .theme-daycode #replace:hover:not([disabled]) { background: #d8faf3; } }
 
     /* ---- 表の集計 ---- */
     .tally { display: flex; flex-wrap: wrap; gap: 4px; padding: 0 6px 2px; }
@@ -610,14 +681,14 @@
     .note { background: var(--maybe-bg); color: var(--maybe-ink); border-radius: 8px; padding: 6px 10px; font-size: 13.5px; }
 
     /* ---- 入力部品 ---- */
-    input[type=text], textarea, select {
+    input[type=text], input[type=password], textarea, select {
       font: inherit; color: var(--ink); background: var(--card); width: 100%;
       border: 0; border-radius: 8px; padding: 7px 10px;
       box-shadow: 0 0 0 1px var(--ring-strong);
       transition: box-shadow 140ms ease;
     }
-    input[type=text]::placeholder, textarea::placeholder { color: var(--faint); }
-    input[type=text]:focus, textarea:focus, select:focus {
+    input[type=text]::placeholder, input[type=password]::placeholder, textarea::placeholder { color: var(--faint); }
+    input[type=text]:focus, input[type=password]:focus, textarea:focus, select:focus {
       outline: none; box-shadow: 0 0 0 1px var(--accent), 0 0 0 4px var(--accent-soft);
     }
     textarea { min-height: 96px; resize: vertical; line-height: 1.5; font-variant-numeric: tabular-nums; }
@@ -658,16 +729,18 @@
 
     /* ---- 取り込み元の切り替え ---- */
     .seg {
-      position: relative; display: grid; grid-template-columns: 1fr 1fr;
+      position: relative; display: grid; grid-template-columns: 1fr 1fr 1fr;
       background: var(--soft); border-radius: 9px; padding: 3px; margin-bottom: 12px;
     }
     .seg-ind {
-      position: absolute; top: 3px; bottom: 3px; left: 3px; width: calc(50% - 3px);
+      position: absolute; top: 3px; bottom: 3px; left: 3px; width: calc((100% - 6px) / 3);
       background: var(--card); border-radius: 7px;
       box-shadow: 0 0 0 1px var(--ring), 0 1px 3px rgba(31,58,74,.08);
       transition: transform 220ms var(--ease-in-out);
     }
-    .seg[data-tab="tx"] .seg-ind { transform: translateX(100%); }
+    .seg[data-tab="gc"] .seg-ind { transform: translateX(100%); }
+    .seg[data-tab="tx"] .seg-ind { transform: translateX(200%); }
+    .seg button[aria-selected="true"] .ico-g { color: #4f97c7; }
     .seg button {
       position: relative; background: transparent; padding: 5px 8px;
       display: inline-flex; align-items: center; justify-content: center; gap: 6px;
@@ -732,6 +805,24 @@
       .s-plus:hover { background: #d2ecec !important; }
     }
 
+    /* 置き換え：選んでいる記号の色を欄に付ける。押すボタンは淡い青 */
+    .sub-row select.mini {
+      height: 34px; padding: 0 26px 0 12px; font-size: 16px; font-weight: 700; border-radius: 9px;
+    }
+    .sub-row select[data-kind="best"]  { background-color: var(--best-bg);  color: var(--best-ink);  box-shadow: 0 0 0 1px #c9dcee; }
+    .sub-row select[data-kind="ok"]    { background-color: var(--ok-bg);    color: var(--ok-ink);    box-shadow: 0 0 0 1px #c3e5d2; }
+    .sub-row select[data-kind="maybe"] { background-color: var(--maybe-bg); color: var(--maybe-ink); box-shadow: 0 0 0 1px #f3dc9c; }
+    .sub-row select[data-kind="ng"]    { background-color: var(--ng-bg);    color: var(--ng-ink);    box-shadow: 0 0 0 1px #f3c9cb; }
+    .sub-row select[data-kind="plus"]  { background-color: var(--plus-bg);  color: var(--plus-ink);  box-shadow: 0 0 0 1px #bfe0e0; }
+    .sub-row select[data-kind="blank"] { background-color: var(--soft);     color: var(--muted);     font-size: 13.5px; }
+    .sub-row select:focus { box-shadow: 0 0 0 1px var(--accent), 0 0 0 4px var(--accent-soft); }
+    option { background: #fff; font-weight: 700; }
+    option.o-best { color: var(--best-ink); } option.o-ok { color: var(--ok-ink); }
+    option.o-maybe { color: var(--maybe-ink); } option.o-ng { color: var(--ng-ink); }
+    option.o-plus { color: var(--plus-ink); } option.o-blank { color: var(--muted); font-weight: 400; }
+    #replace { height: 34px; padding: 0 14px; border-radius: 9px; font-weight: 700;
+      background: var(--accent-soft); color: var(--accent-ink); box-shadow: 0 0 0 1px #b9d8ec; }
+    @media (hover: hover) and (pointer: fine) { #replace:hover:not([disabled]) { background: #d0e7f4; } }
     .sub-row {
       display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
       padding-top: 10px; margin-top: 2px; border-top: 1px solid var(--soft-2);
@@ -769,6 +860,17 @@
     .set-body { padding: 0 12px 12px; display: grid; gap: 12px; }
     details[open] .set-body { animation: paneIn 200ms var(--ease-out); }
     .label { font-size: 13px; color: var(--muted); margin-bottom: 4px; display: block; }
+    .gclist { display: grid; gap: 6px; }
+    .gcrow { display: flex; align-items: center; gap: 6px; }
+    .gcrow .gcurl { flex: 1; min-width: 0; }
+    .gcno { flex: none; width: 18px; height: 18px; border-radius: 50%; background: var(--accent-soft); color: var(--accent-ink);
+      font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; }
+    .gcdel { color: var(--faint); }
+    .gmore summary { cursor: pointer; color: var(--muted); font-size: 12.5px; list-style: none; padding: 2px 0; border-radius: 4px; }
+    .gmore summary::-webkit-details-marker { display: none; }
+    .gmore summary::before { content: "▸ "; } .gmore[open] summary::before { content: "▾ "; }
+    .gmore[open] { display: grid; gap: 6px; }
+    .gmore .label { margin: 4px 0 0; font-size: 12px; }
 
     .maptbl { display: grid; gap: 2px; }
     .maprow { display: flex; align-items: center; gap: 8px; padding: 3px 0; }
@@ -836,10 +938,12 @@
     }
   </style>
 
-  <div class="wrap${settings.collapsed ? ' collapsed' : ''}">
+  <div class="wrap${settings.collapsed ? ' collapsed' : ''}${SITE.theme ? ` theme-${SITE.theme}` : ''}">
     <div class="top">
-      <a class="brand" href="${SERVICE_URL}" target="_blank" rel="noopener" title="ヒヨリのページを開く">${LOGO_FULL}<span class="vh">ヒヨリ</span></a>
-      <span class="sub">日程入力アシスト</span>
+      ${SITE.noPromo
+        ? '<span class="sub plain">日程入力アシスト</span>'
+        : `<a class="brand" href="${SERVICE_URL}" target="_blank" rel="noopener" title="ヒヨリのページを開く">${LOGO_FULL}<span class="vh">ヒヨリ</span></a>
+      <span class="sub">日程入力アシスト</span>`}
       <span class="spacer"></span>
       <button type="button" class="ghost" id="undo" disabled title="直前の操作の前に戻します">${ICON.undo}元に戻す</button>
       <button type="button" class="ghost icon-btn" id="toggle" aria-expanded="true" aria-label="パネルをたたむ"><span class="chev">${ICON.chevron}</span></button>
@@ -854,6 +958,7 @@
         <div class="seg" role="tablist" aria-label="取り込み元" data-tab="fc">
           <span class="seg-ind" aria-hidden="true"></span>
           <button type="button" role="tab" id="tab-fc" data-tab="fc" aria-selected="true" aria-controls="pane-fc"><span class="ico-cal">${ICON.cal}</span>フリカレ</button>
+          <button type="button" role="tab" id="tab-gc" data-tab="gc" aria-selected="false" aria-controls="pane-gc"><span class="ico-g">${ICON.cal}</span>Google</button>
           <button type="button" role="tab" id="tab-tx" data-tab="tx" aria-selected="false" aria-controls="pane-tx">${ICON.text}テキスト</button>
         </div>
 
@@ -862,13 +967,39 @@
             <input type="text" id="fc" placeholder="https://freecalend.com/open/mem000000_xxxx" autocomplete="off" spellcheck="false" aria-label="フリカレの公開URL">
             <button type="button" class="primary" id="sync"><span class="spin" aria-hidden="true"></span><span class="lbl">取り込む</span></button>
           </div>
-          <div class="between">
+          <div class="row" style="column-gap:16px">
             <label class="check"${SITE.hasBlank ? '' : ' hidden'}><input type="checkbox" id="keep"> 入力済みの日はそのまま</label>
+            <label class="check"><input type="checkbox" id="future"> 本日以降の予定を更新</label>
           </div>
+        </div>
+
+        <div class="pane stack" id="pane-gc" role="tabpanel" aria-labelledby="tab-gc" hidden>
+          <div class="gclist" id="gclist"></div>
+          <div class="between">
+            <button type="button" class="ghost" id="gcadd">＋ カレンダーを増やす</button>
+            <button type="button" class="primary" id="gsync"><span class="spin" aria-hidden="true"></span><span class="lbl">取り込む</span></button>
+          </div>
+          <div class="row" style="column-gap:16px">
+            <label class="check"${SITE.hasBlank ? '' : ' hidden'}><input type="checkbox" id="gkeep"> 入力済みの日はそのまま</label>
+            <label class="check"><input type="checkbox" id="gfuture"> 本日以降の予定を更新</label>
+          </div>
+          <label class="check" id="gfcwrap"><input type="checkbox" id="gfc"> <span id="gfclbl">フリカレの予定も重ねる</span></label>
+          <details class="gmore">
+            <summary>アドレスの調べ方と、予定名の扱い</summary>
+            <div class="hint">
+              Googleカレンダーの「設定」→ 左で自分のカレンダーを選ぶ →「カレンダーの統合」→「iCal形式の非公開アドレス」をコピーして貼ります。カレンダーは5つまで足せて、どれかに予定があれば埋まっている日になります。<br>
+              このアドレスは予定を読める鍵です。この拡張機能の中にだけ保存し、Google以外には送りません。他の人に見せないでください。
+            </div>
+            <label class="label" for="gtent">△にする語（予定名にこの語があれば△）</label>
+            <input type="text" id="gtent" placeholder="例：仮, 未定, 調整中">
+            <label class="label" for="gign">数えない語（予定名にこの語があれば無いものとする）</label>
+            <input type="text" id="gign" placeholder="例：誕生日, リマインド">
+          </details>
         </div>
 
         <div class="pane stack" id="pane-tx" role="tabpanel" aria-labelledby="tab-tx" hidden>
           <textarea id="tx" placeholder="9/14 ×&#10;9/15 夜&#10;2026/09/16 昼○ 夜×" aria-label="取り込むテキスト"></textarea>
+          <div class="row"><label class="check"><input type="checkbox" id="futureTx"> 本日以降の予定を更新</label></div>
           <div class="between">
             <span class="hint">1行に1日付。「○」「昼○」「夜」などが読めます</span>
             <button type="button" class="primary" id="tximp"><span class="spin" aria-hidden="true"></span><span class="lbl">読み取る</span></button>
@@ -961,7 +1092,7 @@
 
     <div class="foot">
       <span>ここでの操作は、${esc(SITE.name)}の「${esc(SITE.saveLabel)}」を押すまで保存されません。</span>
-      <a class="promo" href="${SERVICE_URL}" target="_blank" rel="noopener">ヒヨリで日程調整を作る<span aria-hidden="true">↗</span></a>
+      ${SITE.noPromo ? '' : `<a class="promo" href="${SERVICE_URL}" target="_blank" rel="noopener">ヒヨリで日程調整を作る<span aria-hidden="true">↗</span></a>`}
     </div>
 
     <div class="toast-slot">
@@ -984,7 +1115,7 @@
   const table = SITE.tableEl();
   const frame = SITE.frameEl() || table;
   const inlineAnchor = SITE.inlineAnchor() || frame;
-  const SIDE_MIN = 380, SIDE_MAX = 540, GAP = 20, EDGE = 16, STICKY_TOP = 12;
+  const SIDE_MIN = 380, SIDE_MAX = SITE.sideMax || 540, GAP = 20, EDGE = 16, STICKY_TOP = 12;
   const baseMargin = frame.style.marginBottom;
   let placed = null;
 
@@ -1107,17 +1238,25 @@
     return true;
   }
 
+  const TABS = ['fc', 'gc', 'tx'];
   function setTab(tab) {
-    const t = tab === 'tx' ? 'tx' : 'fc';
+    const t = TABS.includes(tab) ? tab : 'fc';
     $('.seg').dataset.tab = t;
     for (const b of $$('.seg [role=tab]')) b.setAttribute('aria-selected', String(b.dataset.tab === t));
-    $('#pane-fc').hidden = t !== 'fc';
-    $('#pane-tx').hidden = t !== 'tx';
+    for (const x of TABS) $(`#pane-${x}`).hidden = t !== x;
   }
 
   function applySettingsToUi() {
     $('#pattern').value = A.PATTERNS[settings.pattern] ? settings.pattern : 'weekday';
     $('#keep').checked = !!settings.keepFilled;
+    $('#future').checked = !!settings.futureOnly;
+    $('#futureTx').checked = !!settings.futureOnlyTx;
+    $('#gkeep').checked = !!settings.keepFilled;
+    $('#gfuture').checked = !!settings.futureOnly;
+    renderGcals();
+    syncGfc();
+    $('#gtent').value = settings.gcalTent ?? '仮, 未定';
+    $('#gign').value = settings.gcalIgnore || '';
     $('#cap').checked = settings.capByPattern !== false;
     $('#openEnd').value = ['120', '180', '240', 'slot'].includes(settings.openEnd) ? settings.openEnd : '180';
     $('#fc').value = settings.freecal || '';
@@ -1137,10 +1276,37 @@
     });
   } catch (e) { /* 初期値のまま */ }
   applySettingsToUi();
+  // 設定画面や別のタブで変えた設定を取り込む（古い設定で上書きしないように）
+  try {
+    chrome.storage.onChanged.addListener((ch, area) => {
+      if (area !== 'local' || !ch.settings?.newValue) return;
+      settings = { ...DEFAULTS, ...ch.settings.newValue };
+      applySettingsToUi();
+    });
+  } catch (e) { /* 取れなければそのまま */ }
 
-  $('#toggle').onclick = () => { saveSettings({ collapsed: !settings.collapsed }); applySettingsToUi(); schedule(); };
+  const toggleOpen = () => { saveSettings({ collapsed: !settings.collapsed }); applySettingsToUi(); schedule(); };
+  $('#toggle').onclick = (ev) => { ev.stopPropagation(); toggleOpen(); };
+  // たたんでいるときは、パネルのどこを押してもひらく
+  $('.wrap').addEventListener('click', () => { if (settings.collapsed) toggleOpen(); });
   $('#pattern').onchange = () => { saveSettings({ pattern: $('#pattern').value }) };
-  $('#keep').onchange = () => saveSettings({ keepFilled: $('#keep').checked });
+  $('#keep').onchange = () => { saveSettings({ keepFilled: $('#keep').checked }); $('#gkeep').checked = $('#keep').checked; };
+  $('#future').onchange = () => { saveSettings({ futureOnly: $('#future').checked }); $('#gfuture').checked = $('#future').checked; };
+  $('#futureTx').onchange = () => saveSettings({ futureOnlyTx: $('#futureTx').checked });
+  // 「入力済みの日はそのまま」「本日以降」はフリカレと Google で同じ設定を使う
+  $('#gkeep').onchange = () => { saveSettings({ keepFilled: $('#gkeep').checked }); $('#keep').checked = $('#gkeep').checked; };
+  $('#gfuture').onchange = () => { saveSettings({ futureOnly: $('#gfuture').checked }); $('#future').checked = $('#gfuture').checked; };
+  $('#gtent').onchange = () => saveSettings({ gcalTent: $('#gtent').value });
+  $('#gfc').onchange = () => saveSettings({ gcalWithFc: $('#gfc').checked });
+  // フリカレの欄にURLがあるときだけ「重ねる」を選べる
+  function syncGfc() {
+    const has = !!($('#fc').value.trim() || settings.freecal);
+    $('#gfc').disabled = !has;
+    $('#gfc').checked = has && !!settings.gcalWithFc;
+    $('#gfclbl').textContent = has ? 'フリカレの予定も重ねる（フリカレの欄のURL）' : 'フリカレの予定も重ねる（フリカレの欄にURLを入れると選べます）';
+  }
+  $('#fc').addEventListener('input', () => syncGfc());
+  $('#gign').onchange = () => saveSettings({ gcalIgnore: $('#gign').value });
   $('#cap').onchange = () => saveSettings({ capByPattern: $('#cap').checked });
   $('#openEnd').onchange = () => saveSettings({ openEnd: $('#openEnd').value });
   $('#cmt').oninput = () => { saveSettings({ comment: $('#cmt').value }) };
@@ -1156,7 +1322,8 @@
   // 左右キーでタブを移る
   $('.seg').addEventListener('keydown', (ev) => {
     if (ev.key !== 'ArrowLeft' && ev.key !== 'ArrowRight') return;
-    const next = settings.tab === 'fc' ? 'tx' : 'fc';
+    const cur = Math.max(0, TABS.indexOf(settings.tab));
+    const next = TABS[(cur + (ev.key === 'ArrowRight' ? 1 : TABS.length - 1)) % TABS.length];
     saveSettings({ tab: next }); setTab(next);
     $(`#tab-${next}`).focus();
     ev.preventDefault();
@@ -1237,8 +1404,15 @@
   $('#sync').onclick = () => busy($('#sync'), withUndo(async () => {
     const url = $('#fc').value.trim();
     if (!url) { $('#fc').focus(); return toast('フリカレのURLを入れてください', { error: true }); }
-    const dated = candidates.filter((c) => c.date);
-    if (!dated.length) return toast('日付を読み取れる候補がありません', { error: true });
+    // 「本日以降の予定を更新」のときは、過ぎた日には触らない（取りに行く月も減らす）
+    const future = $('#future').checked;
+    const now = new Date();
+    const today = `${now.getFullYear()}-${p2(now.getMonth() + 1)}-${p2(now.getDate())}`;
+    const allDated = candidates.filter((c) => c.date);
+    const past = future ? allDated.filter((c) => c.date < today).length : 0;
+    const dated = future ? allDated.filter((c) => c.date >= today) : allDated;
+    if (!allDated.length) return toast('日付を読み取れる候補がありません', { error: true });
+    if (!dated.length) return toast('本日以降の候補がありません', { detail: '過ぎた日も入れるときは「本日以降の予定を更新」を外してください', error: true });
 
     const months = [...new Set(dated.map((c) => c.date.slice(0, 7)))];
     const res = await send({ type: 'freecal', url, months });
@@ -1250,11 +1424,14 @@
     const cap = $('#cap').checked;
     const keep = SITE.hasBlank && $('#keep').checked;
 
-    let applied = 0, kept = 0, closed = 0, same = 0, noSym = 0;
+    // 読み込みの上限（1回3か月まで）で読まなかった月は、触らずにそのままにする
+    const skippedMonths = new Set(res.skipped || []);
+    let applied = 0, kept = 0, closed = 0, same = 0, noSym = 0, notRead = 0;
     for (const c of dated) {
       if (keep && current(c) !== '0') { kept++; continue; }
       const ym = `${+c.date.slice(0, 4)}-${+c.date.slice(5, 7)}`;
       if (res.closed[ym]) { closed++; continue; }
+      if (skippedMonths.has(c.date.slice(0, 7))) { notRead++; continue; }
       let st = A.classifyCell(res.cells[c.date], { mode: 'auto', pattern, isHoliday: isHoliday(c.date) });
       if (cap) st = capByPattern(st, pattern, isHoliday(c.date));
       const key = keyFor(decide(c, st));
@@ -1263,11 +1440,13 @@
     }
     const parts = [];
     if (kept) parts.push(`入力済み ${kept}日はそのまま`);
+    if (past) parts.push(`過ぎた日 ${past}日はそのまま`);
     if (same) parts.push(`変更なし ${same}日`);
     if (closed) parts.push(`非公開の月 ${closed}日`);
     if (noSym) parts.push(`「入れない」${noSym}日`);
     if (undated) parts.push(`日付を読めない候補 ${undated}件`);
-    if (res.cached) parts.push('30分以内に取得した内容');
+    if (notRead) parts.push(`${[...skippedMonths].map((ym) => +ym.slice(5) + '月').join('・')}の${notRead}日は今回は読んでいません（1分ほどおいてもう一度押すと読みます）`);
+    if (res.cached) parts.push('1時間以内に取得した内容');
     report(applied ? `${applied}日に入れました` : '変わった日はありません', parts, applied);
   }));
 
@@ -1329,9 +1508,12 @@
 
   // ------------------------------------------------------------ テキスト
 
-  $('#tximp').onclick = () => busy($('#tximp'), withUndo(async () => {
-    const text = $('#tx').value;
-    if (!text.trim()) { $('#tx').focus(); return toast('読み取る文字が入っていません', { error: true }); }
+  /**
+   * 「日付 記号」の行（時刻つきの形式も可）を読んで表に入れる。テキスト取り込みと Googleカレンダー取り込みの共通部分。
+   * future … 過ぎた日には入れない / keep … 入力済みの日はそのまま / quiet … 機械が作った行なので行数の内訳は出さない
+   */
+  async function importText(text, { future = false, keep = false, quiet = false, extra = [] } = {}) {
+    const unit = quiet ? '日' : '行';
 
     const dated = candidates.filter((c) => c.date);
     const dates = [...new Set(dated.map((c) => c.date))];
@@ -1345,11 +1527,16 @@
     const openEnd = $('#openEnd').value;
 
     const cells = A.parseManual(text, { dates, defaultYear: +(dates[0] || '').slice(0, 4) || anchor.getFullYear() });
-    let applied = 0, same = 0, outside = 0, noSym = 0, timed = 0;
+    // 「本日以降の予定を更新」のときは、過ぎた日の行は読んでも入れない
+    const futureTx = !!future;
+    const now = new Date();
+    const today = `${now.getFullYear()}-${p2(now.getMonth() + 1)}-${p2(now.getDate())}`;
+    let applied = 0, same = 0, outside = 0, noSym = 0, timed = 0, past = 0, kept = 0;
     const hitDates = new Set();
     for (const [d, raw] of Object.entries(cells)) {
       const targets = dated.filter((c) => c.date === d);
       if (!targets.length) { outside++; continue; }
+      if (futureTx && d < today) { past++; hitDates.add(d); continue; }
       hitDates.add(d);
       // 「｜」から後ろは予定の時刻。記号の読み取りには混ぜない（「×10:00」の×を拾わないように）
       const bar = raw.search(/[｜|]/);
@@ -1360,6 +1547,7 @@
       let st = A.classifyCell(body, { mode: 'auto', pattern, explicit: true, isHoliday: holiday });
       if (cap) st = capByPattern(st, pattern, holiday);
       for (const c of targets) {
+        if (keep && current(c) !== '0') { kept++; continue; }
         let cat;
         if (busy && c.time) {
           cat = judgeByTime(c, busy, { windows, openEnd, cap, pattern, holiday });
@@ -1375,13 +1563,141 @@
     const lines = text.split('\n').filter((l) => l.trim()).length;
     const ignored = Math.max(0, lines - Object.keys(cells).length);
     const parts = [];
+    if (kept) parts.push(`入力済み ${kept}件はそのまま`);
+    if (past) parts.push(`過ぎた日 ${past}${unit}はそのまま`);
     if (same) parts.push(`変更なし ${same}件`);
-    if (outside) parts.push(`候補に無い日付 ${outside}行`);
-    if (ignored) parts.push(`日付の無い行 ${ignored}行`);
+    if (outside && !quiet) parts.push(`候補に無い日付 ${outside}行`);
+    if (ignored && !quiet) parts.push(`日付の無い行 ${ignored}行`);
     if (noSym) parts.push(`「入れない」${noSym}件`);
     if (timed) parts.push(`予定の時刻で判定 ${timed}件`);
+    parts.push(...extra);
     if (!hitDates.size) return toast('候補日に合う行がありませんでした', { detail: parts.join('・'), error: true });
     report(applied ? `${applied}件入れました` : '変わった日はありません', parts, applied);
+  }
+  $('#tximp').onclick = () => busy($('#tximp'), withUndo(async () => {
+    const text = $('#tx').value;
+    if (!text.trim()) { $('#tx').focus(); return toast('読み取る文字が入っていません', { error: true }); }
+    return importText(text, { future: $('#futureTx').checked });
+  }));
+
+  // ------------------------------------------------------------ Googleカレンダー（iCal の非公開アドレス）
+  //
+  // 予定は拡張機能の裏側（background.js）が Google から直接読み、予定名はそこから外に出さない。
+  // ここに届くのは日ごとの「埋まっている時刻」と「仮の時刻」だけ。
+  // それを Googleカレンダー ○×テキスト（GAS）と同じ形の文にして、テキスト取り込みに渡す。
+  const hm = (min) => `${p2(Math.floor(min / 60))}:${p2(min % 60)}`;
+  function gcalText(days, dates, windows) {
+    const w = windows || DEFAULT_WINDOWS;
+    const lines = [`昼 ${w.day[0] / 60}-${w.day[1] / 60}時 / 夜 ${w.night[0] / 60}-${w.night[1] / 60}時`];
+    for (const d of dates) {
+      const x = days[d] || { busy: [], tent: [] };
+      const hit = (list, [a, b]) => list.some(([s, e]) => s < b && e > a);
+      const mark = (win) => (hit(x.busy, win) ? '×' : hit(x.tent, win) ? '△' : '○');
+      const rng = (list, sym) => list.map(([s, e]) => (s <= 0 && e >= 1440 ? `${sym}終日` : `${sym}${hm(s)}-${hm(Math.min(e, 1440))}`));
+      const times = [...rng(x.busy, '×'), ...rng(x.tent, '△')];
+      const wd = WD[new Date(d + 'T00:00:00Z').getUTCDay()];
+      lines.push(`${d.replace(/-/g, '/')}(${wd}) 昼${mark(w.day)} 夜${mark(w.night)} ｜${times.length ? times.join(' ') : 'なし'}`);
+    }
+    return lines.join('\n');
+  }
+  const words = (s) => String(s || '').split(/[,、，\s]+/).map((x) => x.trim()).filter(Boolean);
+
+  // 読み込むカレンダーの一覧。アドレスは伏せ字で並べ、5つまで足せる
+  // （設定の反映から先に呼ばれるので、const ではなく function で書く）
+  function gcalList() {
+    const list = Array.isArray(settings.gcals) ? settings.gcals : (settings.gcal ? [settings.gcal] : []);
+    return list.length ? list : [''];
+  }
+  /** 画面の欄に今入っているアドレス（保存前の書きかけも含む） */
+  function gcalInputs() {
+    const els = $$('.gcurl');
+    return els.length ? els.map((el) => el.value.trim()) : gcalList();
+  }
+  function renderGcals() {
+    const list = gcalList();
+    $('#gclist').innerHTML = list.map((u, i) => `
+      <div class="gcrow">
+        <span class="gcno" aria-hidden="true">${i + 1}</span>
+        <input type="password" class="gcurl" data-i="${i}" value="${esc(u)}" placeholder="iCal形式の非公開アドレス" autocomplete="off" spellcheck="false" aria-label="${i + 1}つめのGoogleカレンダーの非公開アドレス">
+        <button type="button" class="ghost icon-btn gcdel" data-i="${i}" aria-label="${i + 1}つめのカレンダーを外す"${list.length === 1 && !u ? ' disabled' : ''}>✕</button>
+      </div>`).join('');
+    $('#gcadd').disabled = list.length >= 5;
+    $$('.gcurl').forEach((el) => {
+      el.onchange = () => {
+        const next = gcalList().slice();
+        next[+el.dataset.i] = el.value.trim();
+        saveSettings({ gcals: next, gcal: undefined });
+      };
+    });
+    $$('.gcdel').forEach((b) => {
+      b.onclick = () => {
+        const next = gcalInputs().filter((_, i) => i !== +b.dataset.i);
+        saveSettings({ gcals: next.length ? next : [''], gcal: undefined });
+        renderGcals();
+      };
+    });
+  }
+  $('#gcadd').onclick = () => {
+    const list = gcalInputs();
+    if (list.length >= 5) return;
+    saveSettings({ gcals: [...list, ''], gcal: undefined });
+    renderGcals();
+    $$('.gcurl').at(-1)?.focus();
+  };
+
+  $('#gsync').onclick = () => busy($('#gsync'), withUndo(async () => {
+    // 押す直前に書き換えた欄も拾う（change が来る前に押されることがある）
+    const urls = $$('.gcurl').map((el) => el.value.trim());
+    saveSettings({ gcals: urls.length ? urls : [''], gcal: undefined });
+    const filled = urls.filter(Boolean);
+    if (!filled.length) { $('.gcurl')?.focus(); return toast('Googleカレンダーの非公開アドレスを入れてください', { error: true }); }
+    const future = $('#gfuture').checked;
+    const now = new Date();
+    const todayIso = `${now.getFullYear()}-${p2(now.getMonth() + 1)}-${p2(now.getDate())}`;
+    const dates = [...new Set(candidates.filter((c) => c.date).map((c) => c.date))]
+      .filter((d) => !future || d >= todayIso).sort();
+    if (!dates.length) return toast(future ? '本日以降の候補がありません' : '日付を読み取れる候補がありません', { error: true });
+
+    const res = await send({
+      type: 'gcal', urls: filled, from: dates[0], to: dates[dates.length - 1],
+      tentative: words($('#gtent').value), ignore: words($('#gign').value),
+    });
+    if (!res.ok) return toast('取り込めませんでした', { detail: res.message, error: true });
+    const extra = [];
+    if (filled.length > 1) extra.push(`${res.read}つのカレンダーを重ねて判定`);
+
+    // フリカレも重ねる：フリカレの記号（昼×・夜△など）を、その時間帯ぶんの「埋まっている／仮」の時刻に直して足す。
+    // ふだんの都合はこのあとの判定で一度だけ効かせるので、ここでは書いてある記号だけを見る（pattern: free）
+    const days = res.days || {};
+    const fcUrl = ($('#fc').value.trim() || settings.freecal || '').trim();
+    if ($('#gfc').checked && fcUrl) {
+      const months = [...new Set(dates.map((d) => d.slice(0, 7)))];
+      const fr = await send({ type: 'freecal', url: fcUrl, months });
+      if (!fr.ok) {
+        extra.push(`フリカレは重ねられませんでした（${fr.message}）`);
+      } else {
+        const w = DEFAULT_WINDOWS;
+        const notRead = new Set(fr.skipped || []);
+        let used = 0;
+        for (const d of dates) {
+          const ym = `${+d.slice(0, 4)}-${+d.slice(5, 7)}`;
+          if (fr.closed?.[ym] || notRead.has(d.slice(0, 7))) continue;
+          const st = A.classifyCell(fr.cells[d], { mode: 'auto', pattern: 'free', isHoliday: false });
+          const x = (days[d] ||= { busy: [], tent: [] });
+          for (const [slot, win] of [['day', w.day], ['night', w.night]]) {
+            if (st[slot] === false) x.busy.push([...win]);
+            else if (st[slot] === null) x.tent.push([...win]);
+            else continue;
+            used++;
+          }
+        }
+        extra.push(`フリカレも重ねて判定${used ? `（${used}か所）` : ''}`);
+        if (notRead.size) extra.push(`フリカレの${[...notRead].map((ym) => +ym.slice(5) + '月').join('・')}は今回は読んでいません`);
+      }
+    }
+    for (const f of res.failed || []) extra.push(`${f.no}つめは読めませんでした（${f.message}）`);
+    if (res.cached) extra.push('10分以内に読んだ内容');
+    return importText(gcalText(days, dates), { future, keep: SITE.hasBlank && $('#gkeep').checked, quiet: true, extra });
   }));
 
   // ------------------------------------------------------------ まとめて入力
@@ -1433,6 +1749,12 @@
     const nonNg = SYMBOL_LIST.filter((s) => s.kind !== 'ng').map((s) => s.text);
     if (nonNg[0]) $('#rfrom').value = nonNg[0];
     $('#rto').value = nonNg[1] || '';
+    // 選んでいる記号の色を、選ぶ欄そのものに付ける
+    for (const sel of [$('#rfrom'), $('#rto')]) {
+      const paint = () => { sel.dataset.kind = sel.value ? symClass(sel.value) : 'blank'; };
+      sel.addEventListener('change', paint);
+      paint();
+    }
   }
   $('#replace').onclick = withUndo(() => {
     const fromSym = $('#rfrom').value;
