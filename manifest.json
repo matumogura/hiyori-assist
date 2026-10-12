@@ -2,9 +2,9 @@
   "manifest_version": 3,
   "name": "ヒヨリ 日程入力アシスト",
   "short_name": "ヒヨリ日程入力",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA9RPuQeWSZCSfh+6aqi/WBGFcThaQIV6R7w3kUOJwKWX5DkQguKr44+Mi2JrcDozTPWUvULgrSiUqJosB5x9F4XzB9iu2lUUY+76dtOTjUsDDd2xYKYRpGBsfXVh5foazDM98ZfuSP0po7aeA2aSUqIoc3NXNXRP2bE8FO8hiZSPFG79KZEbNR5K3iPu0gH3jYXcidLUQky6nb5F28xeNEkTps/s/Uum/pHz99TvjeFdElpRSMYVbSCgDuMvTY+0ygrF9/02EvGzT8jE7A0qf5CD0M6KeFUqbs6Ik+UUBtw1W0E6RR/NoUpdi0F/dBpcJrJFbFrJvgMSGm2Qj6fk4/QIDAQAB",
-  "description": "伝助・デイコード・調整さん・ヒヨリの入力画面に、フリカレ／Googleカレンダー／テキストからの取り込みやまとめて入力を追加します。カレンダーの予定はどこにも送りません。",
+  "description": "伝助・デイコード・調整さん・ヒヨリの入力画面に、フリカレ／Googleカレンダー／テキストからの取り込みやまとめて入力を追加。Googleの予定やヒヨリの確定日を自分のフリカレに書き込むこともできます。",
   "icons": {
     "16": "icons/16.png",
     "32": "icons/32.png",
@@ -46,6 +46,15 @@
       "js": [
         "availability.js",
         "create.js"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://freecalend.com/*"
+      ],
+      "js": [
+        "freecal.js"
       ],
       "run_at": "document_idle"
     },

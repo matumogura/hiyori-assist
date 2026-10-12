@@ -13,7 +13,7 @@ PowerShell で `.\store\pack.ps1` を実行すると `store\dist\hiyori-assist-<
 ヒヨリ 日程入力アシスト
 
 **概要**（132文字以内。manifest の description がそのまま使われる）
-伝助・デイコード・調整さん・ヒヨリの入力画面に、フリカレ／Googleカレンダー／テキストからの取り込みやまとめて入力を追加します。カレンダーの予定はどこにも送りません。
+伝助・デイコード・調整さん・ヒヨリの入力画面に、フリカレ／Googleカレンダー／テキストからの取り込みやまとめて入力を追加。Googleの予定やヒヨリの確定日を自分のフリカレに書き込むこともできます。
 
 **説明**
 ```
@@ -41,6 +41,12 @@ https://github.com/matumogura/hiyori-assist
 
 ■ ヒヨリ
 参加者ページの「取り込む」→「Google」から、Googleカレンダーの予定を全・昼・夜・×にして表に入れます。
+Googleカレンダーのアドレスなどの設定は、ヒヨリの「自分の設定」でまとめて登録できます（アドレスはこの拡張機能の中にだけ保存されます）。
+
+■ 自分のフリカレに書き込む（ログインしたフリカレの画面で）
+・Googleの予定を「×」「昼×」「夜△」などの記号にして書く。予定名を書くかどうかは選べます（初期値は記号だけ）
+・ヒヨリで確定した日に、集まりの名前と時刻を書く。いつもの時間なら時刻を省けます
+・書く前に変わる日を一覧で確かめ、押したときだけ書きます。「元に戻す」で戻せます
 
 ■ Googleカレンダーについて
 Googleカレンダーの「iCal形式の非公開アドレス」を使います。アドレスはこの拡張機能の中にだけ保存し、Google以外には送りません。
@@ -86,7 +92,8 @@ declarativeNetRequestWithHostAccess
 https://freecalend.com/open/data … 利用者が指定した公開フリーカレンダーを読み取るため（読み取りのみ）。
 https://calendar.google.com/calendar/ical/* … 利用者が登録したGoogleカレンダーの非公開アドレスから予定を読むため、および日本の祝日カレンダーを読むため。
 https://macchan.onrender.com/api/sched/* … 伝助の新規作成画面で「ヒヨリから写す」を使ったとき、指定された日程調整の題名と候補日を読むため。
-コンテンツスクリプトの対象（densuke.biz、character-sheets.appspot.com/schedule/input、chouseisan.com、macchan.onrender.com/sched）… 入力画面に補助のパネルを表示し、入力表のボタンを押すため。
+コンテンツスクリプトの対象（densuke.biz、character-sheets.appspot.com/schedule/input、chouseisan.com、macchan.onrender.com/sched）… 入力画面に補助のパネルを表示し、入力表のボタンを押すため。また macchan.onrender.com/sched の「自分の設定」に、この拡張機能の設定欄（Googleカレンダーのアドレスなど）を表示するため。
+コンテンツスクリプトの対象（https://freecalend.com/*）… 利用者がログインして開いている自分のフリーカレンダーの画面にパネルを表示し、利用者が「書き込む」を押したときだけ、そのページから利用者自身のカレンダーに予定の記号や確定日を書き込むため。書き込む前に変更点を一覧で見せ、元に戻す機能もあります。
 ```
 
 リモートコード
@@ -107,7 +114,19 @@ https://macchan.onrender.com/api/sched/* … 伝助の新規作成画面で「�
 **プライバシーポリシーのURL**
 https://github.com/matumogura/hiyori-assist/blob/main/PRIVACY.md
 
-## 4. 提出前の確認
+## 4. 更新（v1.1.0）の提出
+
+既存のアイテムの「パッケージ」→「新しいパッケージをアップロード」から `store\dist\hiyori-assist-1.1.0.zip` を上げる。
+掲載情報の「説明」と、プライバシーへの取り組みの「ホストの権限」を上の文に差し替える（freecalend.com/* が増えたため審査に時間がかかることがある）。
+
+審査の補足欄（任意）
+```
+v1.1.0 で、利用者がログインして開いている自分のフリーカレンダーのページに書き込む機能を追加しました。
+そのため freecalend.com/* をコンテンツスクリプトの対象に加えています。書き込みは、利用者が変更点の一覧を確認して「書き込む」を押したときだけ、そのページの中から利用者自身のカレンダーに対して行います。外部のサーバーには何も送りません。
+また、設定画面（options.html）をやめ、ヒヨリのサイトの「自分の設定」の中にこの拡張機能が設定欄を描く形にしました（設定はこれまでどおり chrome.storage.local のみに保存）。
+```
+
+## 5. 提出前の確認
 
 - [ ] GitHub のリポジトリを公開にした（PRIVACY.md が開ける）
 - [ ] `.\store\pack.ps1` で zip を作り、zip の manifest に `key` が無い

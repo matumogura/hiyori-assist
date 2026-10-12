@@ -15,7 +15,7 @@ $version = $manifest.version
 if (Test-Path $work) { Remove-Item $work -Recurse -Force }
 New-Item -ItemType Directory -Path $work | Out-Null
 
-$files = @('availability.js', 'background.js', 'content.js', 'create.js', 'hiyori.js', 'ics.js', 'options.html', 'options.js')
+$files = @('availability.js', 'background.js', 'content.js', 'create.js', 'hiyori.js', 'freecal.js', 'ics.js', 'options.html', 'options.js')
 foreach ($f in $files) { Copy-Item (Join-Path $root $f) $work }
 Copy-Item (Join-Path $root 'icons') (Join-Path $work 'icons') -Recurse
 

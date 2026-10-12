@@ -13,7 +13,7 @@
  * ・1カレンダーあたり1日 MAX_MONTHS_PER_MEM_DAY か月、この拡張全体で1日 MAX_MONTHS_TOTAL_DAY か月まで
  * ・フリカレがエラーを返したら ERROR_PAUSE_MS のあいだ取得を止める
  * ・同じカレンダーを同時に読みに行かない（二度押し・複数のタブ）
- * ・書き込みは一切しない
+ * ・ここからは書き込まない（フリカレへの書き込みは freecal.js が、ログイン中のフリカレのページから本人の操作で行う）
  */
 
 // Googleカレンダー（iCal）の読み解き
@@ -319,7 +319,13 @@ function addDays(days, text, msg) {
       const e = o.allDay ? 1440 : Math.min(1440, (o.endMs - day) / 60000);
       if (e > s) {
         const key = ICS.dateKey(day);
-        (days[key] ||= { busy: [], tent: [] })[kind].push([Math.round(s), Math.round(e)]);
+        const rec = (days[key] ||= { busy: [], tent: [] });
+        rec[kind].push([Math.round(s), Math.round(e)]);
+        // 予定名は、本人がフリカレに書くと選んだときだけ外に出す（msg.withNames）
+        if (msg.withNames) {
+          const name = title.replace(/\\;/g, ';').replace(/\\\\/g, '\\').replace(/\s+/g, ' ').trim().slice(0, 40);
+          if (name) { rec.names ||= []; if (!rec.names.includes(name)) rec.names.push(name); }
+        }
       }
       day += DAY;
     }
@@ -328,6 +334,7 @@ function addDays(days, text, msg) {
 
 /** ヒヨリの日程調整（参加用でも管理用でもよい）から、題名・候補日・確定日を読む */
 const HIYORI_API = 'https://macchan.onrender.com/api/sched/events/';
+const SETTINGS_URL = 'https://macchan.onrender.com/sched/#/me';
 async function loadHiyori(url) {
   const s = String(url || '').trim();
   const m = s.match(/#\/e\/([A-Za-z0-9_-]+)/) || s.match(/^([A-Za-z0-9_-]{8,})$/);
@@ -340,7 +347,28 @@ async function loadHiyori(url) {
   }
   const data = await res.json().catch(() => null);
   if (!res.ok || !data) throw new Error(data?.error || data?.message || 'この日程調整は見つかりません');
-  return { title: data.title || '', dates: data.dates || [], confirmed: data.confirmed || [] };
+  return {
+    title: data.title || '', dates: data.dates || [], confirmed: data.confirmed || [],
+    heldTimes: data.heldTimes || {}, askTimes: !!data.askTimes,
+    // 確定日に「揃う時間帯」を入れるため。名前は渡さない（id と答えだけ）
+    participants: (data.participants || []).map((p) => ({ id: p.id })),
+    answers: data.answers || {},
+  };
+}
+
+/**
+ * ヒヨリの「自分の設定」のうち、ふだんの都合と参加できる時間だけを読む（ログイン中のときだけ）。
+ * フリカレに確定日を書くとき、いつもどおりの時間なら時刻を省くために使う。
+ */
+async function loadHiyoriMe() {
+  try {
+    const res = await fetch('https://macchan.onrender.com/api/sched/me', { credentials: 'include' });
+    const d = await res.json().catch(() => null);
+    if (!res.ok || !d?.loggedIn) return { loggedIn: false };
+    return { loggedIn: true, pattern: d.profile?.pattern || null, times: d.profile?.times || null };
+  } catch (e) {
+    return { loggedIn: false };
+  }
 }
 
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
@@ -360,11 +388,15 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       return { ok: true, mem, ...cal, holidays };
     }
     if (msg?.type === 'openOptions') {
-      chrome.runtime.openOptionsPage();
+      // 設定はヒヨリの「自分の設定」にまとめてある（拡張機能の欄はこの拡張機能が描く）
+      chrome.tabs.create({ url: SETTINGS_URL });
       return { ok: true };
     }
     if (msg?.type === 'gcal') {
       return { ok: true, ...(await loadGcal(msg)) };
+    }
+    if (msg?.type === 'hiyoriMe') {
+      return { ok: true, ...(await loadHiyoriMe()) };
     }
     if (msg?.type === 'hiyori') {
       return { ok: true, ...(await loadHiyori(msg.url)) };
