@@ -119,7 +119,7 @@ https://github.com/matumogura/hiyori-assist/blob/main/PRIVACY.md
 
 既存のアイテムの「パッケージ」→「新しいパッケージをアップロード」から `store\dist\hiyori-assist-1.1.0.zip` を上げる。
 掲載情報の「説明」と、プライバシーへの取り組みの「ホストの権限」を上の文に差し替える（freecalend.com/* が増えたため審査に時間がかかることがある）。
-画像は screenshot-2（文言を「予定は作者のサーバーに送りません」に変更）・screenshot-4（新規）・promo-small・promo-marquee（キャッチコピーを「カレンダー・調整ツール間の転記をサポート！／予定の更新をかんたんに！」に変更）を上げ直す。
+画像は screenshot-2（文言を「予定は作者のサーバーに送りません」に変更）・screenshot-4（新規）・promo-small・promo-marquee（キャッチコピーを「カレンダー・調整ツール間の転記をサポート／予定の更新をかんたんに」に変更）を上げ直す。
 
 審査の補足欄（任意）
 ```
