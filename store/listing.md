@@ -20,8 +20,9 @@ PowerShell で `.\store\pack.ps1` を実行すると `store\dist\hiyori-assist-<
 伝助・デイコード・調整さん・ヒヨリの出欠入力を手伝う拡張機能です。
 フリーカレンダー（フリカレ）やGoogleカレンダーの予定を読んで、入力表に○△×をまとめて入れます。
 
-■ カレンダーの予定はどこにも送りません
-読み込みも○△×への変換も、すべてあなたのブラウザの中で行います。作者のサーバーにも送りません。
+■ 予定は作者のサーバーに送りません
+読み込みも○△×への変換も、すべてあなたのブラウザの中で行います。作者のサーバー（ヒヨリを含む）には送りません。
+フリカレに書き込むのは、あなたが内容を確かめて「書き込む」を押したときだけです。予定名を書くかどうかも選べます（初期値は記号だけ）。
 コードはすべて公開しています。
 https://github.com/matumogura/hiyori-assist
 
@@ -64,7 +65,7 @@ Discord：https://discord.gg/KTBmA3N7tW
 
 **画像**（`store/images/`）
 - アイコン 128×128：`icon-128.png`（ストアの推奨どおり、絵は96×96で周りに16pxの透明な余白。拡張機能の中の `icons/128.png` は余白なしのまま）
-- スクリーンショット 1280×800：`screenshot-1.png` 〜 `screenshot-3.png`
+- スクリーンショット 1280×800：`screenshot-1.png` 〜 `screenshot-4.png`（4 はフリカレへの書き込み。v1.1.0 で追加）
 - 小さいプロモーションタイル 440×280：`promo-small.png`
 - マーキー プロモーション タイル 1400×560：`promo-marquee.png`
 
@@ -118,6 +119,7 @@ https://github.com/matumogura/hiyori-assist/blob/main/PRIVACY.md
 
 既存のアイテムの「パッケージ」→「新しいパッケージをアップロード」から `store\dist\hiyori-assist-1.1.0.zip` を上げる。
 掲載情報の「説明」と、プライバシーへの取り組みの「ホストの権限」を上の文に差し替える（freecalend.com/* が増えたため審査に時間がかかることがある）。
+画像は screenshot-2（文言を「予定は作者のサーバーに送りません」に変更）・screenshot-4（新規）・promo-small・promo-marquee（同じ文言の変更）を上げ直す。
 
 審査の補足欄（任意）
 ```
