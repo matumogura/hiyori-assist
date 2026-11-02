@@ -14,6 +14,10 @@
  * ・フリカレがエラーを返したら ERROR_PAUSE_MS のあいだ取得を止める
  * ・同じカレンダーを同時に読みに行かない（二度押し・複数のタブ）
  * ・ここからは書き込まない（フリカレへの書き込みは freecal.js が、ログイン中のフリカレのページから本人の操作で行う）
+ *
+ * キパビュー（TRPG のシナリオ・卓の記録アプリ）の卓の予定も、ここで読む（loadKpvSched）。
+ * キパビューがこのパソコンの中（127.0.0.1）で待ち受けている所から読むだけで、外には出さない。
+ * キパビューの側で「ヒヨリの拡張に、自分の卓の予定を渡す」を入れたときだけ中身が返る
  */
 
 // Googleカレンダー（iCal）の読み解き
@@ -371,6 +375,27 @@ async function loadHiyoriMe() {
   }
 }
 
+/** キパビューの卓の予定（今日から半年）。キパビューのアプリが待ち受ける 127.0.0.1:47321〜47323 から読む */
+const KPV_PORTS = [47321, 47322, 47323];
+async function loadKpvSched() {
+  for (const port of KPV_PORTS) {
+    const ctl = new AbortController();
+    const timer = setTimeout(() => ctl.abort(), 1500);
+    let d = null;
+    try {
+      const res = await fetch(`http://127.0.0.1:${port}/kpv-sched/list`, { headers: { 'X-KPV': '1' }, signal: ctl.signal, cache: 'no-store', credentials: 'omit' });
+      if (res.ok) d = await res.json().catch(() => null);
+    } catch (e) { /* 次の番号を試す */ } finally { clearTimeout(timer); }
+    if (!d || d.app !== 'KPViewer') continue;
+    if (!d.on) throw new Error('キパビューの「卓」→カレンダー→「同卓者のフリカレ」で、「ヒヨリの拡張に、自分の卓の予定を渡す」を入れてください');
+    const items = (Array.isArray(d.items) ? d.items : [])
+      .filter((x) => x && /^\d{4}-\d{2}-\d{2}$/.test(x.date))
+      .map((x) => ({ date: x.date, time: String(x.time || ''), title: String(x.title || '').trim() || '（無題の卓）', role: String(x.role || '') }));
+    return { items };
+  }
+  throw new Error('キパビューが見つかりません。キパビューのアプリを開いてから、もう一度押してください');
+}
+
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   (async () => {
     if (msg?.type === 'holidays') {
@@ -394,6 +419,9 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     }
     if (msg?.type === 'gcal') {
       return { ok: true, ...(await loadGcal(msg)) };
+    }
+    if (msg?.type === 'kpvSched') {
+      return { ok: true, ...(await loadKpvSched()) };
     }
     if (msg?.type === 'hiyoriMe') {
       return { ok: true, ...(await loadHiyoriMe()) };

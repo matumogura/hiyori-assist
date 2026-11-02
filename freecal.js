@@ -5,6 +5,7 @@
  *  ・Googleの予定を写す … Googleカレンダーの予定を「×」「昼×」「夜△」などの記号にして、日ごとの欄に入れる。
  *                          予定名は書かない（どこにも出さない）。
  *  ・確定日を書き込む   … ヒヨリで確定した日に「21:00〜24:00 題名」のような行を足す（時刻の入れ方は選べる）。
+ *  ・キパビューの卓を写す … キパビュー（アプリ）の卓の日に「題名 21:00〜24:00」の行を足す。日程が動いた卓の古い行は外す。
  *
  * 決まり
  *  ・書き込みはこのページから、ログイン中の本人の権限で行う。ヒヨリのサーバーは通さない。
@@ -284,6 +285,7 @@
       <div class="tabs" role="tablist">
         <button type="button" role="tab" data-tab="g" aria-selected="true">Googleの予定</button>
         <button type="button" role="tab" data-tab="h" aria-selected="false">確定日</button>
+        <button type="button" role="tab" data-tab="k" aria-selected="false">キパビュー</button>
       </div>
 
       <section class="card" data-pane="g">
@@ -318,6 +320,16 @@
         <label class="row" style="font-size:13px;cursor:pointer"><input type="checkbox" id="hshort">いつもの時間なら省く</label>
         <div class="msg" id="hmsg">確定した日に、題名の行を足します。</div>
         <div id="hlist"></div>
+      </section>
+
+      <section class="card" data-pane="k" hidden>
+        <div class="seg" role="radiogroup" aria-label="キパビューの卓の書き方">
+          <button type="button" role="radio" data-kwhat="title" aria-checked="true">題名と時刻</button>
+          <button type="button" role="radio" data-kwhat="plain" aria-checked="false">「卓」と時刻</button>
+        </div>
+        <div class="row"><span class="msg">今日から半年の卓</span><span class="spacer"></span><button type="button" id="kplan">キパビューの卓を写す</button></div>
+        <div class="msg" id="kmsg">キパビューの卓の日に「題名 21:00〜24:00」のような行を足します。日程が変わった卓の古い行は外し、手書きの行は残します。キパビューのアプリを開いておいてください。</div>
+        <div id="klist"></div>
       </section>
 
       <div class="row" id="undoRow" hidden>
@@ -632,6 +644,89 @@
       const { cells, closed } = await readRange(dates[0], dates[dates.length - 1]);
       hctx = { r, cells, closed, dates };
       buildHiyoriPlan();
+    } catch (e) {
+      say(msg, e.message || String(e), 'err');
+    } finally {
+      btn.disabled = false;
+    }
+  };
+
+  // ------------------------------------------------------------ キパビューの卓を写す
+  // キパビュー（アプリ）が渡す卓の予定 [{date, time:'21:00-24:00', title, role}] を、その日の行「題名 21:00〜24:00」にする。
+  // 前に写した題名（KPV_NAMES）と日（KPV_DATES）を覚えておき、日程が動いた卓の古い行を外す。手書きの行は残す
+  const KPV_NAMES = `fcKpvNames:${MEM}`, KPV_DATES = `fcKpvDates:${MEM}`;
+  let kWhat = 'title';
+  const setKWhat = (v) => {
+    kWhat = v === 'plain' ? 'plain' : 'title';
+    root.querySelectorAll('[data-kwhat]').forEach((b) => b.setAttribute('aria-checked', String(b.dataset.kwhat === kWhat)));
+  };
+  store.get('fcKWhat').then((g) => setKWhat(g.fcKWhat));
+  root.querySelectorAll('[data-kwhat]').forEach((b) => {
+    b.onclick = () => { if (b.dataset.kwhat === kWhat) return; setKWhat(b.dataset.kwhat); store.set({ fcKWhat: kWhat }); $('#klist').innerHTML = ''; };
+  });
+  const kTime = (t) => String(t || '').trim().replace(/\s*[-~～〜]\s*/g, '〜');
+  const kName = (it) => (kWhat === 'plain' ? '卓' : it.title.replace(/\s+/g, ' ').trim());
+  const kLine = (it) => { const t = kTime(it.time); return t ? `${kName(it)} ${t}` : kName(it); };
+
+  $('#kplan').onclick = async () => {
+    const btn = $('#kplan'), msg = $('#kmsg');
+    $('#klist').innerHTML = '';
+    btn.disabled = true;
+    try {
+      say(msg, 'キパビューを読んでいます…');
+      const r = await send({ type: 'kpvSched' });
+      if (!r.ok) { say(msg, r.message, 'err'); return; }
+      const from = todayStr();
+      // フリカレを一度に読めるのは 6 か月まで。今月から 6 か月の中だけを写す
+      const t = parseDate(from);
+      const lastM = new Date(Date.UTC(t.y, t.m - 1 + 6, 0)).toISOString().slice(0, 10);
+      const items = (r.items || []).filter((x) => x.date >= from && x.date <= lastM);
+      const later = (r.items || []).filter((x) => x.date > lastM).length;
+      const want = new Map();   // date -> [行]
+      for (const it of items) {
+        const l = kLine(it);
+        const a = want.get(it.date) || [];
+        if (!a.includes(l)) a.push(l);
+        want.set(it.date, a);
+      }
+      const g = await store.get([KPV_NAMES, KPV_DATES]);
+      const names = new Set([...(g[KPV_NAMES] || []), ...items.map(kName)]);
+      const dates = new Set([...want.keys(), ...(g[KPV_DATES] || []).filter((d) => d >= from && d <= lastM)]);
+      if (!dates.size) { say(msg, 'キパビューに、今日から半年の卓がありません。', 'good'); return; }
+      const ds = [...dates].sort();
+      say(msg, 'フリカレを読んでいます…');
+      const { cells, closed } = await readRange(ds[0], ds[ds.length - 1]);
+      const managed = (l) => [...names].some((n) => isSameEvent(l, n));
+      const changes = [];
+      for (const date of ds) {
+        if (!cells.has(date)) continue;   // 非公開の月
+        const hda = cells.get(date);
+        const before = hda ? hda[3][1] || '' : '';
+        const lines = norm(before).split('\n').filter((l) => l !== '');
+        const add = want.get(date) || [];
+        const mine = lines.filter((l) => managed(l)).map((l) => l.trim());
+        // もう同じ行がそろっていれば変えない（並び順の違いだけでは書かない）
+        if (mine.length === add.length && add.every((l) => mine.includes(l))) continue;
+        const kept = lines.filter((l) => !managed(l));
+        const after = [...kept, ...add].join('\n');
+        if (norm(before) !== after) changes.push({ date, before, after });
+      }
+      const notes = [];
+      if (closed.length) notes.push(`非公開の月は飛ばしました：${closed.join('、')}`);
+      if (later) notes.push(`7か月目より先の卓（${later}日）は、まだ写しません`);
+      if (!changes.length) { say(msg, ['キパビューの卓はすべて写してあります。', ...notes].join(' '), 'good'); return; }
+      say(msg, [`${changes.length}日が変わります。外したい日はチェックを外してください。`, ...notes].join(' '));
+      renderPlan($('#klist'), msg, changes, async (results) => {
+        // 書けた日を覚える（次に日程が動いたとき、古い行を外すため）
+        const ok = results.filter((x) => x.ok).map((x) => x.date);
+        const cur = await store.get([KPV_NAMES, KPV_DATES]);
+        const keepD = new Set([...(cur[KPV_DATES] || []).filter((d) => d >= todayStr()), ...ok.filter((d) => want.has(d))]);
+        ok.filter((d) => !want.has(d)).forEach((d) => keepD.delete(d));
+        await store.set({
+          [KPV_NAMES]: [...new Set([...(cur[KPV_NAMES] || []), ...items.map(kName)])].slice(-200),
+          [KPV_DATES]: [...keepD].sort(),
+        });
+      });
     } catch (e) {
       say(msg, e.message || String(e), 'err');
     } finally {
