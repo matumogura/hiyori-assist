@@ -1,5 +1,5 @@
 /**
- * content.js — 日程調整サービスの出欠入力画面に、ヒヨリと同じ入力手段を足す
+ * content.js — 日程調整サービスの出欠入力画面に、卓日和と同じ入力手段を足す
  *
  *  対応サービス: 伝助（densuke.biz）／デイコード（character-sheets.appspot.com/schedule）／調整さん（chouseisan.com）
  *
@@ -166,7 +166,7 @@
       isPageInput: (target) => !!target.closest?.('.statustag, .allstatus'),
       commentEl: () => document.getElementById('comment'),
       hasBlank: true,
-      // デイコードは外部サービスへの誘導が禁止。ヒヨリのロゴと「日程調整を作る」の案内を出さない
+      // デイコードは外部サービスへの誘導が禁止。卓日和のロゴと「日程調整を作る」の案内を出さない
       noPromo: true,
       // 色と角の丸みをデイコード（Bulma）に寄せる
       theme: 'daycode',
@@ -371,7 +371,7 @@
   // ------------------------------------------------------------ 判定
 
   /**
-   * ヒヨリの {day, night}（true=空き false=不可 null=不明）を、入れ分けの区分に分ける。
+   * 卓日和の {day, night}（true=空き false=不可 null=不明）を、入れ分けの区分に分ける。
    *   full  … 全日○（昼○ 夜○）
    *   day   … 昼だけ○（夜は × か不明）
    *   night … 夜だけ○（昼は × か不明）
@@ -416,7 +416,7 @@
   function defaultMapping() {
     const or = (...xs) => xs.find(Boolean) || '';
     const ng = or(T.ng);
-    // 「全昼夜」のテンプレート：ヒヨリの区分がそのまま当てはまる。対応する札が無い区分は入れない
+    // 「全昼夜」のテンプレート：卓日和の区分がそのまま当てはまる。対応する札が無い区分は入れない
     if (T.all || T.day || T.night) {
       return { full: or(T.all), day: or(T.day), night: or(T.night), maybe: or(T.maybe), half: '', ng };
     }
@@ -457,7 +457,7 @@
   /**
    * ふだんの都合を上限として重ねる。
    * 「カレンダーやテキストで空いている」と「その時間帯にふだん動ける」は別の情報なので、
-   * 両方そろって初めて空きとみなす（ヒヨリ本体の worst と同じ考え方）。
+   * 両方そろって初めて空きとみなす（卓日和本体の worst と同じ考え方）。
    */
   function capByPattern(st, pattern, isHoliday) {
     const base = A.PATTERNS[pattern] || A.PATTERNS.free;
@@ -514,12 +514,12 @@
     chevron: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>',
   };
 
-  // ヒヨリのサービスページ（ロゴと案内の行き先）
+  // 卓日和のサービスページ（ロゴと案内の行き先）
   const SERVICE_URL = 'https://macchan.onrender.com/sched/';
 
-  // ヒヨリのロゴ（マーク＋文字）。sched.html の LOGO_FULL と同じ絵。
+  // 卓日和のロゴ（マーク＋文字）。sched.html の LOGO_FULL と同じ絵（いまは仮のロゴ。新しいロゴができたら差し替える）。
   // 色は currentColor で決めるので、元絵を差し替えたら sched.html と一緒にここも書き換える。
-  const LOGO_FULL = `<svg class="lg" viewBox="527.174 463.989 1007.01 279.91" fill="currentColor" aria-hidden="true"><path d="M838.65,548.554L838.65,514.332C838.65,501.495 828.228,491.072 815.391,491.072L582.865,491.072L582.865,463.989L815.391,463.989C843.176,463.989 865.734,486.547 865.734,514.332L865.734,693.557C865.734,721.342 843.176,743.899 815.391,743.899L711.821,743.899L711.821,716.816L815.391,716.816C828.228,716.816 838.65,706.394 838.65,693.557L838.65,579.288L711.821,579.288L711.821,548.554L838.65,548.554ZM1295.886,549.554L1295.886,529.408C1295.886,516.571 1287.542,509.072 1272.627,509.072L1169.131,509.072L1169.131,481.989L1275.743,481.989C1305.398,481.989 1322.97,497.338 1322.97,525.123L1322.97,676.557C1322.97,704.342 1300.412,726.899 1272.627,726.899L1169.057,726.899L1169.057,699.816L1272.627,699.816C1285.464,699.816 1295.886,689.394 1295.886,676.557L1295.886,580.288L1169.131,580.288L1169.131,549.554L1295.886,549.554ZM554.257,579.288L554.257,693.557C554.257,706.394 564.679,716.816 577.517,716.816L681.087,716.816L681.087,743.899L577.517,743.899C549.732,743.899 527.174,721.342 527.174,693.557L527.174,464.124L554.257,464.124L554.257,548.554L681.087,548.554L681.087,579.288L554.257,579.288ZM985.769,580.288L985.769,676.557C985.769,689.394 996.192,699.816 1009.029,699.816L1112.599,699.816L1112.599,726.899L1009.029,726.899C981.244,726.899 958.686,704.342 958.686,676.557L958.686,482.124L985.769,482.124L985.769,549.554L1112.599,549.554L1112.599,580.288L985.769,580.288ZM1507.098,481.422L1534.182,481.422L1534.182,667.565C1534.182,700.805 1510.777,726.515 1483.839,726.515L1380.269,726.515L1380.269,699.432L1483.839,699.432C1497.549,699.432 1507.098,684.482 1507.098,667.565L1507.098,481.422ZM1411.003,480.93L1411.003,580.072L1380.269,580.072L1380.269,480.93L1411.003,480.93ZM729.721,596.34L756.804,596.34L756.804,634.869C756.804,662.654 734.246,685.212 706.461,685.212L644.039,685.212L644.039,658.129L706.461,658.129C719.299,658.129 729.721,647.706 729.721,634.869L729.721,596.34ZM643.575,596.34L670.658,596.34L670.658,630.25L643.575,630.25L643.575,596.34Z"/></svg>`;
+  const LOGO_FULL = `<svg class="lg" viewBox="0 0 390 100" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="9" stroke-linejoin="round" stroke-linecap="round"><rect x="8" y="16" width="84" height="76" rx="14"/><path d="M30 6v18M70 6v18M8 38h84"/><text x="50" y="83" text-anchor="middle" font-size="40" font-weight="800" fill="currentColor" stroke="none">卓</text></g><text x="120" y="84" font-size="84" font-weight="800" letter-spacing="2" fill="currentColor">卓日和</text></svg>`;
 
   const symClass = (t) => KIND[t] || 'ok';
   const undated = candidates.filter((c) => !c.date).length;
@@ -946,7 +946,7 @@
     <div class="top">
       ${SITE.noPromo
         ? '<span class="sub plain">日程入力アシスト</span>'
-        : `<a class="brand" href="${SERVICE_URL}" target="_blank" rel="noopener" title="ヒヨリのページを開く">${LOGO_FULL}<span class="vh">ヒヨリ</span></a>
+        : `<a class="brand" href="${SERVICE_URL}" target="_blank" rel="noopener" title="卓日和のページを開く">${LOGO_FULL}<span class="vh">卓日和</span></a>
       <span class="sub">日程入力アシスト</span>`}
       <span class="spacer"></span>
       <button type="button" class="ghost" id="undo" disabled title="直前の操作の前に戻します">${ICON.undo}元に戻す</button>
@@ -1098,7 +1098,7 @@
 
     <div class="foot">
       <span>ここでの操作は、${esc(SITE.name)}の「${esc(SITE.saveLabel)}」を押すまで保存されません。</span>
-      ${SITE.noPromo ? '' : `<a class="promo" href="${SERVICE_URL}" target="_blank" rel="noopener">ヒヨリで日程調整を作る<span aria-hidden="true">↗</span></a>`}
+      ${SITE.noPromo ? '' : `<a class="promo" href="${SERVICE_URL}" target="_blank" rel="noopener">卓日和で日程調整を作る<span aria-hidden="true">↗</span></a>`}
     </div>
 
     <div class="toast-slot">

@@ -2,7 +2,7 @@
  * create.js — 伝助の「イベント新規作成」で、候補日程の入力を手伝う
  *
  *  ・期間と曜日でまとめて作る（平日と土日祝で時刻を分けられる）
- *  ・ヒヨリの日程調整から候補日（または確定日）を写す
+ *  ・卓日和の日程調整から候補日（または確定日）を写す
  *  ・自分のフリカレで、予定が埋まっている日を消す
  *  ・日付順に並べ替えて、同じ行を消す
  *
@@ -207,7 +207,7 @@
     <div class="body">
       <div class="seg" role="tablist" aria-label="補助の種類">
         <button type="button" role="tab" data-tab="make" aria-selected="true">まとめて作る</button>
-        <button type="button" role="tab" data-tab="hiyori" aria-selected="false">ヒヨリから</button>
+        <button type="button" role="tab" data-tab="hiyori" aria-selected="false">卓日和から</button>
         <button type="button" role="tab" data-tab="tidy" aria-selected="false">整理する</button>
       </div>
 
@@ -237,10 +237,10 @@
       </section>
 
       <section class="card" data-pane="hiyori" hidden>
-        <div class="row"><input type="text" id="hurl" class="grow" placeholder="ヒヨリの日程調整のURL" spellcheck="false">
+        <div class="row"><input type="text" id="hurl" class="grow" placeholder="卓日和の日程調整のURL" spellcheck="false">
           <button type="button" class="primary" id="hload">写す</button></div>
         <label class="check"><input type="checkbox" id="hconf"> 確定した日だけ写す</label>
-        <div class="hint">「まとめて作る」の平日・土日祝の時刻を付けて、今の候補と入れ替えます。イベント名が空なら、ヒヨリの題名も入れます。</div>
+        <div class="hint">「まとめて作る」の平日・土日祝の時刻を付けて、今の候補と入れ替えます。イベント名が空なら、卓日和の題名も入れます。</div>
       </section>
 
       <section class="card" data-pane="tidy" hidden>
@@ -342,10 +342,10 @@
   $('#add').onclick = () => make('add');
   $('#replace').onclick = () => make('replace');
 
-  // ------------------------------------------------------------ ヒヨリから写す
+  // ------------------------------------------------------------ 卓日和から写す
   $('#hload').onclick = async () => {
     const url = $('#hurl').value.trim();
-    if (!url) return say('ヒヨリの日程調整のURLを入れてください', true);
+    if (!url) return say('卓日和の日程調整のURLを入れてください', true);
     save({ hiyori: url });
     say('読み込んでいます');
     const res = await send({ type: 'hiyori', url });

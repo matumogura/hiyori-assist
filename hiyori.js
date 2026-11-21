@@ -1,7 +1,7 @@
 /**
- * hiyori.js — ヒヨリの参加者ページで、Googleカレンダーから表に入れる
+ * hiyori.js — 卓日和の参加者ページで、Googleカレンダーから表に入れる
  *
- * ヒヨリのサイトは、iCal のアドレスも予定も一切持たない。
+ * 卓日和のサイトは、iCal のアドレスも予定も一切持たない。
  *  ・アドレスはこの拡張機能の中（chrome.storage.local）にだけある
  *  ・予定は background.js が Google から直接読み、日ごとの「埋まっている／仮」の時刻に直す
  *  ・ここでそれを「全・昼・夜・×」に直し、ページの表のボタンを押す（＝手で押したのと同じ）
@@ -45,7 +45,7 @@
     if (hit(x?.tent)) return null;
     return true;
   }
-  /** ヒヨリ本体の toValue と同じ。どちらかが要確認なら決めない */
+  /** 卓日和本体の toValue と同じ。どちらかが要確認なら決めない */
   function toValue(st) {
     if (st.day === null || st.night === null) return null;
     if (st.day && st.night) return 'all';
@@ -125,7 +125,7 @@
   //
   // ページは <div id="hiyori-ext-settings"> という空の置き場だけを用意する。
   // 中身はこの拡張機能が閉じた Shadow DOM で描くので、ページのスクリプトからはアドレスを読めない。
-  // 保存先はこの拡張機能の中（chrome.storage.local）だけ。ヒヨリのサーバーには送らない。
+  // 保存先はこの拡張機能の中（chrome.storage.local）だけ。卓日和のサーバーには送らない。
   const GMAX = 5;
   const escHtml = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const ICAL_RE = /^(https:|webcal:)\/\/calendar\.google\.com\/calendar\/ical\/\S+\.ics$/i;
@@ -174,7 +174,7 @@
       <div class="lbl">数えない語（予定名にこの語があれば無いものとする）</div>
       <input type="text" id="ign" placeholder="例：誕生日, リマインド">
       <div class="row"><button type="button" class="primary" id="save">保存</button><span class="msg" id="msg" aria-live="polite"></span></div>
-      <div class="note">アドレスは予定を読める鍵です。この拡張機能の中にだけ保存し、Google以外には送りません。ヒヨリのサーバーにも送りません。予定名は△や数えない語の判定にだけ使います。</div>
+      <div class="note">アドレスは予定を読める鍵です。この拡張機能の中にだけ保存し、Google以外には送りません。卓日和のサーバーにも送りません。予定名は△や数えない語の判定にだけ使います。</div>
     </div>`;
     const q = (s) => sr.querySelector(s);
     let list = [''];

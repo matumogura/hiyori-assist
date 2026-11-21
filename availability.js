@@ -3,7 +3,7 @@
 /**
  * availability.js — 空き状況の解釈まわり（共通ロジック）
  *
- * ヒヨリ本体の app/sched/availability.mjs をそのまま移したもの。
+ * 卓日和本体の app/sched/availability.mjs をそのまま移したもの。
  * 祝日の取得だけは background.js 側に置いている。
  * 本体の判定を直したら、ここにも同じ変更を入れること。
  *
