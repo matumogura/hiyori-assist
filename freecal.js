@@ -4,11 +4,11 @@
  * できること
  *  ・Googleの予定を写す … Googleカレンダーの予定を「×」「昼×」「夜△」などの記号にして、日ごとの欄に入れる。
  *                          予定名は書かない（どこにも出さない）。
- *  ・確定日を書き込む   … ヒヨリで確定した日に「21:00〜24:00 題名」のような行を足す（時刻の入れ方は選べる）。
+ *  ・確定日を書き込む   … 卓日和で確定した日に「21:00〜24:00 題名」のような行を足す（時刻の入れ方は選べる）。
  *  ・キパビューの卓を写す … キパビュー（アプリ）の卓の日に「題名 21:00〜24:00」の行を足す。日程が動いた卓の古い行は外す。
  *
  * 決まり
- *  ・書き込みはこのページから、ログイン中の本人の権限で行う。ヒヨリのサーバーは通さない。
+ *  ・書き込みはこのページから、ログイン中の本人の権限で行う。卓日和のサーバーは通さない。
  *  ・記号の行（VOCAB）だけを入れ替え、手書きの行には触れない。
  *  ・書く前に「現在 → 変更後」を見せ、本人が押したときだけ書く。自動では書かない。
  *  ・1回に書くのは MAX_CHANGES 日まで。1日ずつ間をあけて書き、書いた直後に読み直して確かめる。
@@ -279,7 +279,7 @@
   </style>
   <div class="wrap collapsed">
     <div class="top" id="toggle" role="button" tabindex="0" aria-expanded="false">
-      <b>ヒヨリ</b><span class="msg">フリカレに書き込む</span><span class="spacer"></span><span class="chev">▾</span>
+      <b>卓日和</b><span class="msg">フリカレに書き込む</span><span class="spacer"></span><span class="chev">▾</span>
     </div>
     <div class="body">
       <div class="tabs" role="tablist">
@@ -315,7 +315,7 @@
       </section>
 
       <section class="card" data-pane="h" hidden>
-        <div class="row"><input type="text" id="hurl" placeholder="ヒヨリの日程調整のURL" spellcheck="false" autocomplete="off"><button type="button" id="hplan">読む</button></div>
+        <div class="row"><input type="text" id="hurl" placeholder="卓日和の日程調整のURL" spellcheck="false" autocomplete="off"><button type="button" id="hplan">読む</button></div>
         <div class="row"><span>時刻</span><select id="htime" style="flex:1"></select></div>
         <label class="row" style="font-size:13px;cursor:pointer"><input type="checkbox" id="hshort">いつもの時間なら省く</label>
         <div class="msg" id="hmsg">確定した日に、題名の行を足します。</div>
@@ -502,7 +502,7 @@
 
   // ------------------------------------------------------------ 確定日を書き込む
   //
-  // 時刻の入れ方は選べる。「日ごと」はヒヨリの画面の「確定した日」と同じ考え方で、
+  // 時刻の入れ方は選べる。「日ごと」は卓日和の画面の「確定した日」と同じ考え方で、
   // その日に全員が揃う帯（全・昼・夜）のうち、主催者が「やらない」にしていない帯の開催時間を入れる。
   const fmtHour = (h) => { const hh = Math.floor(h); return `${hh}:${h - hh ? '30' : '00'}`; };
   const BAND = { day: '昼', night: '夜' };
@@ -514,7 +514,7 @@
     ['both', '昼と夜の開催時間'],
     ['none', '時刻を入れない'],
   ];
-  let hctx = null;   // 読んだヒヨリとフリカレ { r, cells, closed, dates }
+  let hctx = null;   // 読んだ卓日和とフリカレ { r, cells, closed, dates }
 
   /** その日に全員が揃う帯。答えていない人がいれば決めない */
   function commonSlot(r, date) {
@@ -558,7 +558,7 @@
   }
 
   // ---- いつもの時間なら省く
-  // ヒヨリの「自分の設定」の、ふだんの都合（平日の昼は仕事など）と参加できる時間をもとに、
+  // 卓日和の「自分の設定」の、ふだんの都合（平日の昼は仕事など）と参加できる時間をもとに、
   // その日がいつもどおりの帯・開始時刻なら題名だけにする。
   //   帯がいつもと違う   … 「題名 夜」「題名 昼」「題名 全日」
   //   開始だけ違う       … 「題名 22:00〜24:00」（いつもと違う帯の時間だけ）
@@ -610,7 +610,7 @@
     }
     const notes = closed.length ? [`非公開の月は飛ばしました：${closed.join('、')}`] : [];
     if (!changes.length) { say(msg, ['確定日はすべて書き込み済みです。', ...notes].join(' '), 'good'); return; }
-    if ($('#hshort').checked && !me?.loggedIn) notes.push('ヒヨリにログインしていないので、いつもの時間は「平日は夜・休日は全日、昼13時・夜21時から」として省いています。');
+    if ($('#hshort').checked && !me?.loggedIn) notes.push('卓日和にログインしていないので、いつもの時間は「平日は夜・休日は全日、昼13時・夜21時から」として省いています。');
     say(msg, [`「${title}」を${changes.length}日に書きます。`, ...notes].join(' '));
     renderPlan($('#hlist'), msg, changes);
   }
@@ -629,10 +629,10 @@
     const url = $('#hurl').value.trim();
     $('#hlist').innerHTML = '';
     hctx = null;
-    if (!url) { say(msg, 'ヒヨリの日程調整のURLを貼ってください', 'err'); return; }
+    if (!url) { say(msg, '卓日和の日程調整のURLを貼ってください', 'err'); return; }
     btn.disabled = true;
     try {
-      say(msg, 'ヒヨリを読んでいます…');
+      say(msg, '卓日和を読んでいます…');
       const [r, m, h] = await Promise.all([send({ type: 'hiyori', url }), send({ type: 'hiyoriMe' }), send({ type: 'holidays' })]);
       if (!r.ok) { say(msg, r.message, 'err'); return; }
       me = m.ok ? m : { loggedIn: false };

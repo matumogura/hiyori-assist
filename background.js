@@ -4,7 +4,7 @@
  * 伝助のページ（content.js）からは別サイトへ直接取りに行けないので、
  * 拡張機能の裏側でまとめて取得して返す。
  *
- * フリカレのサーバーに負担をかけないための決まり（ヒヨリ本体 app/sched/freecal.mjs と同じ考え方）
+ * フリカレのサーバーに負担をかけないための決まり（卓日和本体 app/sched/freecal.mjs と同じ考え方）
  * ・取得はユーザーが「取り込む」などを押したときだけ。定期的には読まない
  * ・数えるのは「フリカレに問い合わせた月の数」（1か月＝1回の通信）
  * ・同じ月は CACHE_MS のあいだ使い回す（月ごとに覚える）
@@ -17,7 +17,7 @@
  *
  * キパビュー（TRPG のシナリオ・卓の記録アプリ）の卓の予定も、ここで読む（loadKpvSched）。
  * キパビューがこのパソコンの中（127.0.0.1）で待ち受けている所から読むだけで、外には出さない。
- * キパビューの側で「ヒヨリの拡張に、自分の卓の予定を渡す」を入れたときだけ中身が返る
+ * キパビューの側で「卓日和の拡張に、自分の卓の予定を渡す」を入れたときだけ中身が返る
  */
 
 // Googleカレンダー（iCal）の読み解き
@@ -74,7 +74,7 @@ async function addUsage(mem, n) {
 
 /**
  * 拡張機能からの取得には Origin: chrome-extension://… が付く。
- * ヒヨリのサーバーから取るときと同じ見え方にするため、
+ * 卓日和のサーバーから取るときと同じ見え方にするため、
  * この拡張機能自身の通信（tabId -1）に限って Origin を外す。
  * フリカレのサイトを普通に開いたときの通信には影響しない。
  */
@@ -336,18 +336,18 @@ function addDays(days, text, msg) {
   }
 }
 
-/** ヒヨリの日程調整（参加用でも管理用でもよい）から、題名・候補日・確定日を読む */
+/** 卓日和の日程調整（参加用でも管理用でもよい）から、題名・候補日・確定日を読む */
 const HIYORI_API = 'https://macchan.onrender.com/api/sched/events/';
 const SETTINGS_URL = 'https://macchan.onrender.com/sched/#/me';
 async function loadHiyori(url) {
   const s = String(url || '').trim();
   const m = s.match(/#\/e\/([A-Za-z0-9_-]+)/) || s.match(/^([A-Za-z0-9_-]{8,})$/);
-  if (!m) throw new Error('ヒヨリの日程調整のURLを読み取れません');
+  if (!m) throw new Error('卓日和の日程調整のURLを読み取れません');
   let res;
   try {
     res = await fetch(HIYORI_API + encodeURIComponent(m[1]), { credentials: 'omit' });
   } catch (e) {
-    throw new Error('ヒヨリにつながりません。少し待ってからもう一度押してください');
+    throw new Error('卓日和につながりません。少し待ってからもう一度押してください');
   }
   const data = await res.json().catch(() => null);
   if (!res.ok || !data) throw new Error(data?.error || data?.message || 'この日程調整は見つかりません');
@@ -361,7 +361,7 @@ async function loadHiyori(url) {
 }
 
 /**
- * ヒヨリの「自分の設定」のうち、ふだんの都合と参加できる時間だけを読む（ログイン中のときだけ）。
+ * 卓日和の「自分の設定」のうち、ふだんの都合と参加できる時間だけを読む（ログイン中のときだけ）。
  * フリカレに確定日を書くとき、いつもどおりの時間なら時刻を省くために使う。
  */
 async function loadHiyoriMe() {
@@ -387,7 +387,7 @@ async function loadKpvSched() {
       if (res.ok) d = await res.json().catch(() => null);
     } catch (e) { /* 次の番号を試す */ } finally { clearTimeout(timer); }
     if (!d || d.app !== 'KPViewer') continue;
-    if (!d.on) throw new Error('キパビューの「卓」→カレンダー→「同卓者のフリカレ」で、「ヒヨリの拡張に、自分の卓の予定を渡す」を入れてください');
+    if (!d.on) throw new Error('キパビューの「卓」→カレンダー→「同卓者のフリカレ」で、「卓日和の拡張に、自分の卓の予定を渡す」を入れてください');
     const items = (Array.isArray(d.items) ? d.items : [])
       .filter((x) => x && /^\d{4}-\d{2}-\d{2}$/.test(x.date))
       .map((x) => ({ date: x.date, time: String(x.time || ''), title: String(x.title || '').trim() || '（無題の卓）', role: String(x.role || '') }));
@@ -413,7 +413,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       return { ok: true, mem, ...cal, holidays };
     }
     if (msg?.type === 'openOptions') {
-      // 設定はヒヨリの「自分の設定」にまとめてある（拡張機能の欄はこの拡張機能が描く）
+      // 設定は卓日和の「自分の設定」にまとめてある（拡張機能の欄はこの拡張機能が描く）
       chrome.tabs.create({ url: SETTINGS_URL });
       return { ok: true };
     }
@@ -436,7 +436,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   return true;
 });
 
-// ツールバーのアイコンを押したら、ヒヨリのサービスページを開く
+// ツールバーのアイコンを押したら、卓日和のサービスページを開く
 chrome.action.onClicked.addListener(() => {
   chrome.tabs.create({ url: 'https://macchan.onrender.com/sched/' });
 });
